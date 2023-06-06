@@ -383,6 +383,12 @@ struct PD_INFER_DECL AnalysisConfig {
   ///
   void SetXpuDeviceId(int device_id = 0);
   ///
+  /// \brief Turn on NPU.
+  ///
+  /// \param device_id device_id the NPU card to use (default is 0).
+  ///
+  void EnableNpu(int device_id = 0);
+  ///
   /// \brief Turn on CustomDevice.
   ///
   /// \param device_type device_type the custom device to use.
@@ -463,6 +469,13 @@ struct PD_INFER_DECL AnalysisConfig {
   /// \return int The XPU device id.
   ///
   int xpu_device_id() const { return xpu_device_id_; }
+  ///
+  /// \brief Get the NPU device id.
+  ///
+  /// \return int The NPU device id.
+  ///
+  int npu_device_id() const { return npu_device_id_; }
+  ///
   /// \brief Get the number of IPU device .
   ///
   /// \return int The number of IPU device.
@@ -1087,6 +1100,10 @@ struct PD_INFER_DECL AnalysisConfig {
   bool use_cudnn_{false};
   bool use_external_stream_{false};
   void* exec_stream_{nullptr};
+
+  // NPU related
+  bool use_npu_{false};
+  int npu_device_id_{0};
 
   // CustomDevice related
   bool use_custom_device_{false};

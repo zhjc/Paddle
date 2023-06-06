@@ -56,6 +56,8 @@ PassStrategy *AnalysisConfig::pass_builder() const {
       pass_builder_.reset(new GpuPassStrategy);
     } else if (use_xpu_) {
       pass_builder_.reset(new XpuPassStrategy);
+    } else if (use_npu_) {
+      pass_builder_.reset(new NpuPassStrategy);
     } else if (use_ipu_) {
       LOG(INFO) << "Create IPU IR passes";
       pass_builder_.reset(new IpuPassStrategy);
@@ -501,6 +503,10 @@ AnalysisConfig::AnalysisConfig(const AnalysisConfig &other) {
   CP_MEMBER(xpu_quant_post_dynamic_weight_bits_);
   CP_MEMBER(xpu_quant_post_dynamic_op_types_);
 
+  // NPU related.
+  CP_MEMBER(use_npu_);
+  CP_MEMBER(npu_device_id_);
+
   // Lite OpenCL Related
   CP_MEMBER(use_opencl_);
 
@@ -568,6 +574,9 @@ AnalysisConfig::AnalysisConfig(const AnalysisConfig &other) {
   } else if (use_xpu_) {
     pass_builder_.reset(new XpuPassStrategy(
         *static_cast<XpuPassStrategy *>(other.pass_builder())));
+  } else if (use_npu_) {
+    pass_builder_.reset(new NpuPassStrategy(
+        *static_cast<NpuPassStrategy *>(other.pass_builder())));
   } else if (use_custom_device_) {
     pass_builder_.reset(new CustomDevicePassStrategy(
         *static_cast<CustomDevicePassStrategy *>(other.pass_builder())));
@@ -830,6 +839,7 @@ void AnalysisConfig::Update() {
   // Transfer pass_builder and copy the existing compatible passes.
   if (!pass_builder_ || ((use_gpu() ^ pass_builder_->use_gpu())) ||
       ((use_xpu() ^ pass_builder_->use_xpu())) ||
+      ((use_npu() ^ pass_builder_->use_npu())) ||
       ((use_ipu() ^ pass_builder_->use_ipu())) ||
       ((use_custom_device() ^ pass_builder_->use_custom_device()))) {
     if (use_gpu()) {
@@ -843,6 +853,13 @@ void AnalysisConfig::Update() {
           platform::errors::InvalidArgument(
               "Only one choice can be made between CPU and XPU."));
       pass_builder_.reset(new XpuPassStrategy);
+    } else if (use_npu()) {
+      PADDLE_ENFORCE_EQ(
+          use_gpu(),
+          false,
+          platform::errors::InvalidArgument(
+              "Only one choice can be made between GPU and NPU."));
+      pass_builder_.reset(new NpuPassStrategy);
     } else if (use_custom_device()) {
       PADDLE_ENFORCE_EQ(
           use_gpu(),
@@ -870,6 +887,14 @@ void AnalysisConfig::Update() {
               "Only one choice can be made between CPU and XPU."));
       pass_builder_.reset(new XpuPassStrategy(
           *static_cast<XpuPassStrategy *>(pass_builder_.get())));
+    } else if (use_npu()) {
+      PADDLE_ENFORCE_EQ(
+          use_gpu(),
+          false,
+          platform::errors::InvalidArgument(
+              "Only one choice can be made between GPU and NPU."));
+      pass_builder_.reset(new NpuPassStrategy(
+          *static_cast<NpuPassStrategy *>(pass_builder_.get())));
     } else if (use_custom_device()) {
       PADDLE_ENFORCE_EQ(
           use_gpu(),
@@ -1000,6 +1025,19 @@ void AnalysisConfig::Update() {
         "with XPU-runtime."));
 #endif
   }
+  if (use_npu_) {
+#if defined(PADDLE_WITH_ASCEND_CL) || defined(LITE_SUBGRAPH_WITH_NPU)
+    PADDLE_ENFORCE_EQ(use_gpu_,
+                      false,
+                      platform::errors::Unavailable(
+                          "Currently, NPU and GPU cannot be enabled in the "
+                          "same analysis configuration."));
+#else
+    PADDLE_THROW(platform::errors::Unavailable(
+        "You tried to use an NPU device, but Paddle was not compiled "
+        "with NPU-runtime."));
+#endif
+  }
   if (use_ipu_) {
 #ifndef PADDLE_WITH_IPU
     PADDLE_THROW(platform::errors::Unavailable(
@@ -1087,6 +1125,9 @@ std::string AnalysisConfig::SerializeInfoCache() {
   for (auto op_type : xpu_quant_post_dynamic_op_types_) {
     ss << op_type;
   }
+
+  ss << use_npu_;
+  ss << npu_device_id_;
 
   ss << thread_local_stream_;
 
