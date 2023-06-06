@@ -205,6 +205,18 @@ void AnalysisConfig::SetXpuConfig(
   Update();
 }
 
+void AnalysisConfig::EnableNpu(int device_id) {
+#ifdef PADDLE_WITH_ASCEND_CL
+  use_npu_ = true;
+  npu_device_id_ = device_id;
+#else
+  LOG(ERROR) << "Please compile with npu to EnableNpu()";
+  use_npu_ = false;
+#endif
+
+  Update();
+}
+
 void AnalysisConfig::EnableCustomDevice(const std::string &device_type,
                                         int device_id,
                                         Precision precision_mode) {
