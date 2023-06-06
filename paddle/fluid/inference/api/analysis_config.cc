@@ -1038,7 +1038,7 @@ void AnalysisConfig::Update() {
 #endif
   }
   if (use_npu_) {
-#if defined(PADDLE_WITH_ASCEND) || defined(LITE_SUBGRAPH_WITH_NPU)
+#if defined(PADDLE_WITH_ASCEND)
     PADDLE_ENFORCE_EQ(use_gpu_,
                       false,
                       platform::errors::Unavailable(
