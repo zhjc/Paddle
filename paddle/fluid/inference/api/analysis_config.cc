@@ -42,6 +42,7 @@ struct MkldnnQuantizerConfig;
 extern const std::vector<std::string> kTRTSubgraphPasses;
 extern const std::vector<std::string> kDlnneSubgraphPasses;
 extern const std::vector<std::string> kLiteSubgraphPasses;
+extern const std::vector<std::string> kNpuSubgraphPasses;
 
 AnalysisConfig::AnalysisConfig() {
   // NOTE(liuyuanle): Why put the following code here?
@@ -929,6 +930,12 @@ void AnalysisConfig::Update() {
         continue;
       }
       pass_builder()->AppendPass(pass);
+    }
+  }
+  if (use_npu_) {
+    pass_builder()->ClearPasses();
+    for (const auto &pass : kNpuSubgraphPasses) {
+      pass_builder()->AppendPass(pass)
     }
   }
 

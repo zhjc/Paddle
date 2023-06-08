@@ -358,5 +358,8 @@ PD_INFER_DECL extern const std::vector<std::string> kCINNCompilerPasses;
 /// running errors. After fusion operator supports low precision, delete this.
 PD_INFER_DECL extern const std::vector<std::string> kGpuLowerPrecisionPasses;
 PD_INFER_DECL extern const std::vector<std::string> kTrtLowerPrecisionPasses;
+/// \brief List of Npu subgraph passes.
+PD_INFER_DECL extern const std::vector<std::string> kNpuSubgraphPasses;
+PD_INFER_DECL extern const std::vector<std::string> kNpuLowerPrecisionPasses;
 
 }  // namespace paddle
