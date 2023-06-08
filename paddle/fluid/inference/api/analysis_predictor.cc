@@ -1545,6 +1545,12 @@ void AnalysisPredictor::PrepareArgument() {
         }
       } else if (config_.use_xpu()) {
         // All passes support fp16. Not reset pass_builder.
+      } else if (config_.use_npu()) {
+        pass_builder->ClearPasses();
+        for (const auto &pass : kNpuLowerPrecisionPasses) {
+          if (deleted_passes.count(pass)) continue;
+          pass_builder->AppendPass(pass);
+        }
       } else {
         pass_builder->ClearPasses();
       }

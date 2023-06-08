@@ -163,6 +163,10 @@ class PD_INFER_DECL PassStrategy : public PaddlePassBuilder {
   /// \return A bool variable implying whether we are in xpu mode.
   bool use_xpu() const { return use_xpu_; }
 
+  /// \brief Check if we are using npu.
+  /// \return A bool variable implying whether we are in npu mode.
+  bool use_npu() const { return use_npu_; }
+
   /// \brief Check if we are using ipu.
   /// \return A bool variable implying whether we are in ipu mode.
   bool use_ipu() const { return use_ipu_; }
@@ -178,6 +182,7 @@ class PD_INFER_DECL PassStrategy : public PaddlePassBuilder {
   /// \cond Protected
   bool use_xpu_{false};
   bool use_gpu_{false};
+  bool use_npu_{false};
   bool use_ipu_{false};
   bool use_mkldnn_{false};
   bool use_custom_device_{false};
@@ -289,6 +294,21 @@ class PD_INFER_DECL XpuPassStrategy final : public PassStrategy {
   XpuPassStrategy();
 };
 
+/// \class NpuPassStrategy
+/// \brief The NPU passes controller, it is used in AnalysisPredictor with NPU
+/// mode.
+class PD_INFER_DECL NpuPassStrategy final : public PassStrategy {
+ public:
+  NpuPassStrategy() : PassStrategy({}) { use_npu_ = true; }
+
+  /// \brief Construct by copying another NpuPassStrategy object.
+  /// \param[in] other The NpuPassStrategy object we want to copy.
+  explicit NpuPassStrategy(const NpuPassStrategy &other)
+      : PassStrategy(other.AllPasses()) {
+    use_npu_ = true;
+  }
+};
+
 /// \class CustomDevicePassStrategy
 /// \brief The CustomDevice passes controller, it is used in AnalysisPredictor
 /// with CustomDevice
@@ -338,5 +358,8 @@ PD_INFER_DECL extern const std::vector<std::string> kCINNCompilerPasses;
 /// running errors. After fusion operator supports low precision, delete this.
 PD_INFER_DECL extern const std::vector<std::string> kGpuLowerPrecisionPasses;
 PD_INFER_DECL extern const std::vector<std::string> kTrtLowerPrecisionPasses;
+/// \brief List of Npu subgraph passes.
+PD_INFER_DECL extern const std::vector<std::string> kNpuSubgraphPasses;
+PD_INFER_DECL extern const std::vector<std::string> kNpuLowerPrecisionPasses;
 
 }  // namespace paddle
