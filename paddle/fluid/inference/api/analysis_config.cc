@@ -935,7 +935,7 @@ void AnalysisConfig::Update() {
   if (use_npu_) {
     pass_builder()->ClearPasses();
     for (const auto &pass : kNpuSubgraphPasses) {
-      pass_builder()->AppendPass(pass)
+      pass_builder()->AppendPass(pass);
     }
   }
 
