@@ -219,8 +219,8 @@ const std::vector<std::string> kCINNCompilerPasses{
     "build_cinn_pass",
 };
 
-const std::vector<std::string> kNpuSubgraphPasses();
-const std::vector<std::string> kNpuLowerPrecisionPasses();
+const std::vector<std::string> kNpuSubgraphPasses;
+const std::vector<std::string> kNpuLowerPrecisionPasses;
 
 GpuPassStrategy::GpuPassStrategy() : PassStrategy({}) {
   passes_.assign({
