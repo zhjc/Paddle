@@ -26,6 +26,10 @@ if(TENSORRT_FOUND)
   add_subdirectory(tensorrt)
 endif()
 
+if(WITH_ASCEND)
+  add_subdirectory(ascendie)
+endif()
+
 if(WITH_LITE)
   add_subdirectory(lite)
 endif()

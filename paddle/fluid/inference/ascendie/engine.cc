@@ -282,6 +282,6 @@ AscendEngine::Weight AscendEngine::GetTrtWeight(
 }
 
 
-}  // namespace ascend
+}  // namespace ascendie
 }  // namespace inference
 }  // namespace paddle

@@ -23,7 +23,7 @@ limitations under the License. */
 #include "paddle/fluid/framework/op_registry.h"
 #include "paddle/fluid/framework/scope.h"
 #include "paddle/fluid/inference/analysis/helper.h"
-#include "paddle/fluid/inference/ascend/engine.h"
+#include "paddle/fluid/inference/ascendie/engine.h"
 // #include "paddle/fluid/inference/tensorrt/helper.h"
 // #include "paddle/fluid/inference/tensorrt/op_teller.h"
 #include "paddle/fluid/inference/utils/singleton.h"
@@ -31,7 +31,7 @@ limitations under the License. */
 
 namespace paddle {
 namespace inference {
-namespace ascend {
+namespace ascendie {
 
 /*
  * Convert Op from Fluid to Ascend Engine.
@@ -651,7 +651,7 @@ class OpConverter {
   std::mutex mut_;
 };
 
-}  // namespace ascend
+}  // namespace ascendie
 }  // namespace inference
 }  // namespace paddle
 
@@ -659,8 +659,8 @@ class OpConverter {
   struct asc_##op_type__##_converter : public ::paddle::framework::Registrar { \
     asc_##op_type__##_converter() {                                            \
       ::paddle::inference::Registry<                                           \
-          paddle::inference::ascend::OpConverter>::Global()                  \
-          .Register<::paddle::inference::ascend::Converter__>(#op_type__);   \
+          paddle::inference::ascendie::OpConverter>::Global()                  \
+          .Register<::paddle::inference::ascendie::Converter__>(#op_type__);   \
     }                                                                          \
   };                                                                           \
   asc_##op_type__##_converter asc_##op_type__##_converter__;                   \

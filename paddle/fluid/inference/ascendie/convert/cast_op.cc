@@ -12,11 +12,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. */
 
-#include "paddle/fluid/inference/ascend/convert/op_converter.h"
+#include "paddle/fluid/inference/ascendie/convert/op_converter.h"
 
 namespace paddle {
 namespace inference {
-namespace ascend {
+namespace ascendie {
 
 class CastOpConverter : public OpConverter {
  public:
@@ -24,7 +24,7 @@ class CastOpConverter : public OpConverter {
                   const framework::Scope& scope,
                   bool test_mode) override {
 
-    VLOG(3) << "convert a cast op to ascend";
+    VLOG(3) << "convert a cast op to ascendie";
     framework::OpDesc op_desc(op, nullptr);
 
     Ascend::Tensor* input = engine_->GetITensor(op_desc.Input("X")[0]);
@@ -40,7 +40,7 @@ class CastOpConverter : public OpConverter {
         break;
       case phi::ProtoDataType::INT16:
         cast = network.addCast(input, AscendIE::DataType::INT16);
-        if(cast != nullptr) cast->getOutput(0)->setType(AscendIE::DataType::INT16);        
+        if(cast != nullptr) cast->getOutput(0)->setType(AscendIE::DataType::INT16);
       case phi::ProtoDataType::INT32:
         cast = network.addCast(input, AscendIE::DataType::INT32);
         if(cast != nullptr) cast->getOutput(0)->setType(AscendIE::DataType::INT32);
@@ -51,24 +51,24 @@ class CastOpConverter : public OpConverter {
       case phi::ProtoDataType::UINT8:
         cast = network.addCast(input, AscendIE::DataType::UINT8);
         if(cast != nullptr) cast->getOutput(0)->setType(AscendIE::DataType::UINT8);
-        break;      
+        break;
       case phi::ProtoDataType::INT8:
         cast = network.addCast(input, AscendIE::DataType::INT8);
         if(cast != nullptr) cast->getOutput(0)->setType(AscendIE::DataType::INT8);
-        break;      
+        break;
       case phi::ProtoDataType::FP16:
         cast = network.addCast(input, AscendIE::DataType::FLOAT16);
         if(cast != nullptr) cast->getOutput(0)->setType(AscendIE::DataType::FLOAT16);
-        break;    
+        break;
       // case phi::ProtoDataType::FP32:
-      // case phi::ProtoDataType::FP64: 
-      // case phi::ProtoDataType::RAW: 
-      // case phi::ProtoDataType::BF16: 
-      // case phi::ProtoDataType::COMPLEX64: 
+      // case phi::ProtoDataType::FP64:
+      // case phi::ProtoDataType::RAW:
+      // case phi::ProtoDataType::BF16:
+      // case phi::ProtoDataType::COMPLEX64:
       // case phi::ProtoDataType::COMPLEX128:
       //   LOG(ERROR) << "Unsupport type(" << out_dtype
       //              << ") to a Ascend DataType";
-        break;                   
+        break;
       default:
         LOG(ERROR) << "Unable to convert a fluid data type(" << out_dtype
                    << ") to a Ascend DataType";
@@ -76,18 +76,18 @@ class CastOpConverter : public OpConverter {
     }
 
     if(cast == nullptr) {
-      LOG(ERROR) << "cast is nullptr"; 
+      LOG(ERROR) << "cast is nullptr";
       return;
-    } 
+    }
     network.SetOutput(cast->GetOutput(0));
-  
+
     auto output_name = op_desc.Output("Out")[0];
 
     RreplenishLayerAndOutput(cast, "cast", {output_name}, test_mode);
   }
 };
 
-}  // namespace ascend
+}  // namespace ascendie
 }  // namespace inference
 }  // namespace paddle
 

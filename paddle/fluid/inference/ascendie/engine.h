@@ -45,7 +45,7 @@ PHI_DECLARE_bool(trt_ibuilder_cache);
 
 namespace paddle {
 namespace inference {
-namespace ascend {
+namespace ascendie {
 
 using FluidDT = framework::proto::VarType_Type;
 
@@ -707,6 +707,6 @@ class AscendEngine {
   thread_local static int predictor_id_per_thread;
 };  // class AscendEngine
 
-}  // namespace ascend
+}  // namespace ascendie
 }  // namespace inference
 }  // namespace paddle
