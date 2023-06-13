@@ -460,37 +460,37 @@ limitations under the License. */
 
 //   AscendIE::Tensor* Sum(AscendIE::Tensor* a, AscendIE::Tensor* b) {
 //     // DOPO ADD == SUM?
-//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::SUM)->getOutput(0);
+//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::SUM)->GetOutput(0);
 //     return c;
 //   }
 
 //   AscendIE::Tensor* Prod(AscendIE::Tensor* a, AscendIE::Tensor* b) {
-//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::PROD)->getOutput(0);
+//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::PROD)->GetOutput(0);
 //     return c;
 //   }
 
 //   AscendIE::Tensor* Min(AscendIE::Tensor* a, AscendIE::Tensor* b) {
-//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::MIN)->getOutput(0);
+//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::MIN)->GetOutput(0);
 //     return c;
 //   }
 
 //   AscendIE::Tensor* Max(AscendIE::Tensor* a, AscendIE::Tensor* b) {
-//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::MAX)->getOutput(0);
+//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::MAX)->GetOutput(0);
 //     return c;
 //   }
 
 //   AscendIE::Tensor* Sub(AscendIE::Tensor* a, AscendIE::Tensor* b) {
-//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::SUB)->getOutput(0);
+//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::SUB)->GetOutput(0);
 //     return c;
 //   }
 
 //   AscendIE::Tensor* Div(AscendIE::Tensor* a, AscendIE::Tensor* b) {
-//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::DIV)->getOutput(0);
+//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::DIV)->GetOutput(0);
 //     return c;
 //   }
 
 //   AscendIE::Tensor* FloorDiv(AscendIE::Tensor* a, AscendIE::Tensor* b) {
-//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::FLOOR_DIV)->getOutput(0);
+//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::FLOOR_DIV)->GetOutput(0);
 //     return c;
 //   }
 
@@ -573,9 +573,9 @@ limitations under the License. */
 //     }
 //     engine_->SetWeights(weight_name, std::move(tmp_tensor));
 
-//     nvinfer1::DataType asc_dtype = AscendIE::DataType::FLOAT;
+//     AscendIE::DataType asc_dtype = AscendIE::DataType::FLOAT;
 //     if (std::is_integral<T>::value) {
-//       asc_dtype = nvinfer1::DataType::kINT32;
+//       asc_dtype = AscendIE::DataType::INT32;
 //     }
 
 //     AscendEngine::Weight weight{asc_dtype,
