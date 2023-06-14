@@ -122,6 +122,7 @@ if(WITH_ONNXRUNTIME)
 endif()
 
 link_directories(/home/h00449357/code/ascend-inference/output/lib)
+
 link_libraries(ascendie)
 
 # Create shared inference library
