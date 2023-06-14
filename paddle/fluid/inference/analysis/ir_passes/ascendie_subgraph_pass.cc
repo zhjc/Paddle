@@ -101,7 +101,7 @@ void OutputProcess(framework::ir::Graph *graph,
 }
 
 // Determine whether the whole graph offload to ascendie. If so we can try to
-// enable optimization such as cudaGraph.
+// enable optimization such as npuGraph.
 bool AllNodesLowerToAiePostProcess(framework::ir::Graph *graph) {
   std::unordered_set<std::string> aie_nodes_set{
       "feed", "fetch", "ascendie_engine"};
@@ -139,7 +139,7 @@ void analysis::AscendIESubgraphPass::ApplyImpl(
 
   auto enable_int8 = Get<bool>("enable_int8");
   auto use_calib_mode = Get<bool>("use_calib_mode");
-  bool use_cuda_graph = Get<bool>("use_cuda_graph");
+  bool use_npu_graph = Get<bool>("use_npu_graph");
   bool no_calib_int8 = enable_int8 && !(use_calib_mode);
   auto aie_disabled_ops = Get<std::vector<std::string>>("aie_disabled_ops");
   auto with_dynamic_shape = Get<bool>("with_dynamic_shape");
@@ -185,7 +185,7 @@ void analysis::AscendIESubgraphPass::ApplyImpl(
   for (auto *node : graph->Nodes()) {
     if (node->IsOp() && !framework::ir::Agent(node).subgraph()->empty()) {
       engine_names.push_back(CreateAscendIEOp(
-          node, graph, graph_param_names, &repetitive_params, use_cuda_graph));
+          node, graph, graph_param_names, &repetitive_params, use_npu_graph));
     }
   }
 
@@ -203,13 +203,13 @@ void analysis::AscendIESubgraphPass::ApplyImpl(
   if (all_nodes_offload_to_aie) {
     LOG(INFO) << "The entire graph is offloaded to AscendIE.";
   }
-  if (use_cuda_graph && !all_nodes_offload_to_aie) {
+  if (use_npu_graph && !all_nodes_offload_to_aie) {
     LOG_FIRST_N(WARNING, 1)
-        << "You have enabled CudaGraph, but not the entire graph offload to "
+        << "You have enabled NpuGraph, but not the entire graph offload to "
            "aie, now return to normal mode.";
-    use_cuda_graph = false;
+    use_npu_graph = false;
   }
-  if (use_cuda_graph && all_nodes_offload_to_aie) {
+  if (use_npu_graph && all_nodes_offload_to_aie) {
     for (auto &name : engine_names) {
       PADDLE_ENFORCE_EQ(
           paddle::inference::Singleton<
@@ -221,7 +221,7 @@ void analysis::AscendIESubgraphPass::ApplyImpl(
       paddle::inference::Singleton<
           inference::ascendie::AIEEngineManager>::Global()
           .Get(name)
-          ->SetAllNodesLowerToAie(use_cuda_graph);
+          ->SetAllNodesLowerToAie(use_npu_graph);
     }
   }
 
@@ -245,7 +245,7 @@ std::string GenerateEngineKey(const std::set<std::string> &engine_inputs,
                               const std::string &predictor_id,
                               const std::string &max_batch_size,
                               const std::string &precision,
-                              bool use_cuda_graph,
+                              bool use_npu_graph,
                               const bool for_calibration) {
   std::string engine_hash_key = "";
   for (auto name : engine_inputs) {
@@ -265,7 +265,7 @@ std::string GenerateEngineKey(const std::set<std::string> &engine_inputs,
   engine_hash_key += precision;
 
   engine_hash_key += "#";
-  engine_hash_key += use_cuda_graph;
+  engine_hash_key += use_npu_graph;
 
   auto engine_key = std::to_string(std::hash<std::string>()(engine_hash_key));
   VLOG(2) << "AIE engine hash key: " << engine_hash_key;
@@ -278,7 +278,7 @@ std::string AscendIESubgraphPass::CreateAscendIEOp(
     framework::ir::Graph *graph,
     const std::vector<std::string> &graph_params,
     std::vector<std::string> *repetitive_params,
-    bool use_cuda_graph) const {
+    bool use_npu_graph) const {
   auto *op_desc = node->Op();
   auto &subgraph = *framework::ir::Agent(node).subgraph();
   PADDLE_ENFORCE_EQ(subgraph.empty(),
@@ -388,7 +388,7 @@ std::string AscendIESubgraphPass::CreateAscendIEOp(
   }
 
   OutputProcess(
-      graph, aie_outputs, phi::Backend::GPU, model_precision, mixed_black_list);
+      graph, aie_outputs, phi::Backend::NPU, model_precision, mixed_black_list);
 
   std::unordered_map<std::string, std::string> output_name_map;
   std::unordered_map<std::string, framework::ir::Node *> graph_var_map;
@@ -530,7 +530,7 @@ std::string AscendIESubgraphPass::CreateAscendIEOp(
   op_desc->SetAttr("origin_outputs_dtype", origin_outputs_dtype);
   op_desc->SetAttr("max_batch_size", max_batch_size);
   op_desc->SetAttr("workspace_size", Get<int64_t>("workspace_size"));
-  op_desc->SetAttr("gpu_id", Get<int>("gpu_device_id"));
+  op_desc->SetAttr("npu_id", Get<int>("npu_device_id"));
   op_desc->SetAttr("output_name_mapping", output_mapping);
   op_desc->SetAttr("origin_output_rank", renamed_output_rank);
   op_desc->SetAttr("parameters", params);
@@ -568,7 +568,7 @@ std::string AscendIESubgraphPass::CreateAscendIEOp(
                         std::to_string(0),
                         std::to_string(max_batch_size),
                         std::to_string(static_cast<int>(precision_mode)),
-                        use_cuda_graph,
+                        use_npu_graph,
                         false);
   auto calibration_engine_key =
       GenerateEngineKey(input_names_with_id,
@@ -576,7 +576,7 @@ std::string AscendIESubgraphPass::CreateAscendIEOp(
                         std::to_string(0),
                         std::to_string(max_batch_size),
                         std::to_string(static_cast<int>(precision_mode)),
-                        use_cuda_graph,
+                        use_npu_graph,
                         true);
   auto predictor_id = Get<int>("predictor_id");
 
@@ -660,7 +660,7 @@ std::string AscendIESubgraphPass::CreateAscendIEOp(
                   Get<int64_t>("workspace_size"),
                   static_cast<phi::DataType>(precision_mode),
                   calibrator.get(),
-                  Get<int>("gpu_device_id"),
+                  Get<int>("npu_device_id"),
                   with_dynamic_shape,
                   min_input_shape,
                   max_input_shape,
