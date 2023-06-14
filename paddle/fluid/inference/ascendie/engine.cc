@@ -24,10 +24,10 @@ namespace paddle {
 namespace inference {
 namespace ascendie {
 
-int AscendEngine::runtime_batch_ = 1;
-thread_local int AscendEngine::predictor_id_per_thread = -1;
+int AscendIEEngine::runtime_batch_ = 1;
+thread_local int AscendIEEngine::predictor_id_per_thread = -1;
 
-void AscendEngine::Weight::SetDataType(phi::DataType type) {
+void AscendIEEngine::Weight::SetDataType(phi::DataType type) {
   AscendIE::DataType nv_type = AscendIE::DataType::FLOAT;
   switch (type) {
     case phi::DataType::FLOAT32:
@@ -54,18 +54,18 @@ void AscendEngine::Weight::SetDataType(phi::DataType type) {
   w_.type = nv_type;
 }
 
-void AscendEngine::InitNetwork() {
+void AscendIEEngine::InitNetwork() {
   freshDeviceId();
   infer_builder_.reset(AscendIE::Builder::CreateInferBuilder("Ascend910A"));
 
-  infer_network_.reset(infer_builder_->createNetwork()));
+  infer_network_.reset(infer_builder_->CreateNetwork());
 
   // infer_builder_config_.reset(infer_builder_->createBuilderConfig());
   // optim_profiles_.resize(max_profile_num_);
   // for (int i = 0; i < max_profile_num_; i++)
   //   optim_profiles_[i] = infer_builder_->createOptimizationProfile();
 }
-AscendIE::Context *AscendEngine::context() {
+AscendIE::Context *AscendIEEngine::context() {
   std::unique_lock<std::mutex> lock(mutex_);
   if (infer_context_.find(predictor_id_per_thread) == infer_context_.end()) {
     PADDLE_ENFORCE_NOT_NULL(
@@ -75,7 +75,7 @@ AscendIE::Context *AscendEngine::context() {
     // We may see aie warning: Profile 0 has been chosen by another
     // IExecutionContext...
     // It's ok. We will set it later.
-    AscendIE::Context *infer_context = infer_engine_->createContext();
+    AscendIE::Context *infer_context = infer_engine_->CreateContext();
 
     PADDLE_ENFORCE_NOT_NULL(
         infer_context,
@@ -94,102 +94,102 @@ AscendIE::Context *AscendEngine::context() {
   return infer_context_[predictor_id_per_thread].get();
 }
 
-void AscendEngine::Execute(int batch_size,
+void AscendIEEngine::Execute(int batch_size,
                              std::vector<void *> *buffers,
-                             Ascend::aiestream stream) {
+                             AscendIE::aieStream stream) {
   freshDeviceId();
   auto infer_context = context();
   Enqueue(infer_context, buffers, batch_size, stream);
 }
 
-bool AscendEngine::Enqueue(AscendIE::Context *context,
+bool AscendIEEngine::Enqueue(AscendIE::Context *context,
                              std::vector<void *> *buffers,
                              int batch_size,
-                             AscendIE::aiestream stream) {
-  bool ret = context->enqueue(stream);
+                             AscendIE::aieStream stream) {
+  bool ret = context->Enqueue(stream);
 
   SetRuntimeBatch(batch_size);
   return ret;
 }
 
 
-// void AscendEngine::FreezeNetwork() {
+// void AscendIEEngine::FreezeNetwork() {
 
 // }
 
-AscendIE::Tensor *AscendEngine::DeclareInput(const std::string &name,
+AscendIE::Tensor *AscendIEEngine::DeclareInput(const std::string &name,
                                                 AscendIE::DataType dtype,
                                                 const AscendIE::Dims &dims) {
   PADDLE_ENFORCE_EQ(network() != nullptr,
                     true,
                     platform::errors::InvalidArgument(
                         "The AIE network should be initialized first."));
-  AscendIE::Tensor *input = network()->addInput(name.c_str(), dtype, dims);
+  AscendIE::Tensor *input = network()->AddInput(name.c_str(), dtype, dims);
   PADDLE_ENFORCE_NOT_NULL(
       input,
       platform::errors::InvalidArgument("Adding input %s failed in "
-                                        "TensorRT inference network. "
+                                        "ascend inference network. "
                                         "Please recheck your input.",
                                         name));
-  PADDLE_ENFORCE_EQ(input->isNetworkInput(),
+  PADDLE_ENFORCE_EQ(input->IsInput(),
                     true,
                     platform::errors::InvalidArgument(
                         "Input %s is not the input of AIE inference network. "
                         "Please recheck your input.",
                         name));
-  AscendEngine::SetITensor(name, input);
+  AscendIEEngine::SetITensor(name, input);
   return input;
 }
 
-void AscendEngine::DeclareOutput(const AscendIE::BaseLayer *layer,
+void AscendIEEngine::DeclareOutput(const AscendIE::BaseLayer *layer,
                                    int offset,
                                    const std::string &name) {
-  auto *output = layer->getOutput(offset);
+  auto *output = layer->GetOutput(offset);
   SetITensor(name, output);
   PADDLE_ENFORCE_NOT_NULL(
       output,
       platform::errors::InvalidArgument(
           "The output %s of AIE engine should not be null.", name));
-  output->setName(name.c_str());
-  PADDLE_ENFORCE_EQ(output->isNetworkInput(),
+  output->SetName(name.c_str());
+  PADDLE_ENFORCE_EQ(output->IsInput(),
                     false,
                     platform::errors::InvalidArgument(
                         "The output %s of AIE engine should not be the input "
                         "of the network at the same time.",
                         name));
-  this->network()->SetAsOutput(*output);
+  this->network()->SetAsOutput(output);
   PADDLE_ENFORCE_EQ(
-      output->isOutput(),
+      output->IsOutput(),
       true,
       platform::errors::InvalidArgument(
           "The output %s of AIE engine should be the output of the network.",
           name));
 }
 
-void AscendEngine::DeclareOutput(const std::string &name) {
-  auto *output = AscendEngine::GetITensor(name);
+void AscendIEEngine::DeclareOutput(const std::string &name) {
+  auto *output = AscendIEEngine::GetITensor(name);
   PADDLE_ENFORCE_NOT_NULL(
       output,
       platform::errors::InvalidArgument(
           "The output %s of AIE engine should not be null.", name));
-  output->setName(name.c_str());
-  PADDLE_ENFORCE_EQ(output->isInput(),
+  output->SetName(name.c_str());
+  PADDLE_ENFORCE_EQ(output->IsInput(),
                     false,
                     platform::errors::InvalidArgument(
                         "The output %s of AIE engine should not be the input "
                         "of the network at the same time.",
                         name));
-  network()->SetAsOutput(*output);
+  network()->SetAsOutput(output);
 }
 
-void AscendEngine::DeclareOutput(const std::string &name,
+void AscendIEEngine::DeclareOutput(const std::string &name,
                                    AscendIE::DataType dtype) {
-  auto *output = AscendEngine::GetITensor(name);
+  auto *output = AscendIEEngine::GetITensor(name);
   DeclareOutput(name);
-  output->setType(dtype);
+  output->SetType(dtype);
 }
 
-void AscendEngine::DeleteITensor(const std::string &name,
+void AscendIEEngine::DeleteITensor(const std::string &name,
                                    AscendIE::Tensor *tensor) {
   PADDLE_ENFORCE_NOT_NULL(
       tensor,
@@ -203,7 +203,7 @@ void AscendEngine::DeleteITensor(const std::string &name,
   itensor_map_.erase(name);
 }
 
-void AscendEngine::SetITensor(const std::string &name,
+void AscendIEEngine::SetITensor(const std::string &name,
                                 AscendIE::Tensor *tensor) {
   PADDLE_ENFORCE_NOT_NULL(
       tensor,
@@ -217,7 +217,7 @@ void AscendEngine::SetITensor(const std::string &name,
   itensor_map_[name] = tensor;
 }
 
-AscendIE::Tensor *AscendEngine::GetITensor(const std::string &name,
+AscendIE::Tensor *AscendIEEngine::GetITensor(const std::string &name,
                                               bool scalar) {
   if (scalar) {
     return ConvertWeight2ITensor(name, true);
@@ -232,7 +232,7 @@ AscendIE::Tensor *AscendEngine::GetITensor(const std::string &name,
 
 // For cases when input is not middle-tensor , but persistable tensor
 // you should call this.
-AscendIE::Tensor *AscendEngine::ConvertWeight2ITensor(
+AscendIE::Tensor *AscendIEEngine::ConvertWeight2ITensor(
     const std::string &name, bool scalar) {
   auto *var_v = scope_->FindVar(name);
   PADDLE_ENFORCE_NOT_NULL(
@@ -247,48 +247,44 @@ AscendIE::Tensor *AscendEngine::ConvertWeight2ITensor(
   // Now we have create weights, then we need create a itensor
   auto var_dims = var_t->dims();
 
-  AscendIE::Dims aie_in_shape(var_t->dims().size());
-  for (int64_t i = 0; i < aie_in_shape.size(); i++) {
-    aie_in_shape[i] = var_dims[i];
-  }
+  AscendIE::Dims aie_in_shape(var_dims.size(), var_dims.Get());
   if (scalar) {
-    aie_in_shape.nbDims = 0;
-    aie_in_shape.d[0] = var_dims[0];
+    aie_in_shape = AscendIE::Dims(0, &var_dims[0]);
   }
   AscendIE::ConstantLayer *constant =
       this->network()->AddConstantLayer(aie_in_shape, weight.get());
   if (!scalar) {
     this->SetITensor(name, constant->GetOutput(0));
   }
-  return constant->getOutput(0);
+  return constant->GetOutput(0);
 }
 
 std::unordered_map<std::string, AscendIE::Tensor *>
-    *AscendEngine::GetITensorMap() {
+    *AscendIEEngine::GetITensorMap() {
   return &itensor_map_;
 }
 
-void AscendEngine::Deserialize(const std::string &engine_serialized_data) {
+void AscendIEEngine::Deserialize(const std::string &engine_serialized_data) {
   freshDeviceId();
   infer_runtime_.reset(AscendIE::Runtime::GetInstance());
   infer_engine_.reset(infer_runtime_->DeserializeEngineFromMem(
-      engine_serialized_data.c_str(), engine_serialized_data.size()));
+      const_cast<char*>(engine_serialized_data.c_str()), engine_serialized_data.size()));
 
   PADDLE_ENFORCE_NOT_NULL(
       infer_engine_,
       platform::errors::Fatal(
-          "Building AIE cuda engine failed when deserializing engine info. "
+          "Building AIE engine failed when deserializing engine info. "
           "Please check:\n1. Your AIE serialization is generated and loaded "
           "on the same GPU architecture;\n2. The Paddle Inference version of "
           "generating serialization file and doing inference are "
           "consistent."));
 }
 
-void AscendEngine::SetRuntimeBatch(size_t batch_size) {
+void AscendIEEngine::SetRuntimeBatch(size_t batch_size) {
   runtime_batch_ = batch_size;
 }
 
-AscendEngine::Weight AscendEngine::GetTrtWeight(
+AscendIEEngine::Weight AscendIEEngine::GetTrtWeight(
     const std::string &name, const phi::DenseTensor &weight_tensor) {
   static int name_suffix_counter = 0;
   std::string name_suffix = std::to_string(name_suffix_counter);
@@ -308,7 +304,7 @@ AscendEngine::Weight AscendEngine::GetTrtWeight(
     weight_map[name_with_suffix]->Resize(weight_tensor.dims());
   }
 
-  AscendEngine::Weight weight;
+  AscendIEEngine::Weight weight;
   weight.SetCount(weight_tensor.numel());
 
   // if aie not support dtype, we need to cast to fp32.
@@ -356,18 +352,10 @@ AscendEngine::Weight AscendEngine::GetTrtWeight(
   return weight;
 }
 
-int AscendEngine::GetRuntimeBatch() { return runtime_batch_; }
+int AscendIEEngine::GetRuntimeBatch() { return runtime_batch_; }
 
-void AscendEngine::freshDeviceId() {
-  // int count;
-  // cudaGetDeviceCount(&count);
-  // PADDLE_ENFORCE_LT(device_id_,
-  //                   count,
-  //                   platform::errors::OutOfRange(
-  //                       "Device id %d exceeds the current device count: %d.",
-  //                       device_id_,
-  //                       count));
-  platform::SetDeviceId(device_id_);
+void AscendIEEngine::freshDeviceId() {
+  // platform::SetDeviceId(device_id_);
 }
 
 }  // namespace ascendie

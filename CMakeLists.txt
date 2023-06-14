@@ -692,6 +692,8 @@ if(WITH_CPP_DIST)
   endif()
 endif()
 
+include_directories(/home/h00449357/code/ascend-inference/include)
+
 add_subdirectory(paddle)
 if(WITH_PYTHON)
   add_subdirectory(python)
