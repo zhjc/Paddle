@@ -582,12 +582,12 @@ std::string AscendIESubgraphPass::CreateAscendIEOp(
 
   // Get "" when there is no cached calibration table data.
   std::string calibration_data = "";
-  if (enable_int8 && use_calib_mode) {
-    calibration_data =
-        GetAieCalibTableData(Get<std::string>("model_opt_cache_dir"),
-                             calibration_engine_key,
-                             enable_int8);
-  }
+  // if (enable_int8 && use_calib_mode) {
+  //   calibration_data =
+  //       GetAieCalibTableData(Get<std::string>("model_opt_cache_dir"),
+  //                            calibration_engine_key,
+  //                            enable_int8);
+  // }
   op_desc->SetAttr("calibration_data", calibration_data);
   op_desc->SetAttr("enable_int8", enable_int8);
   op_desc->SetAttr("enable_fp16", enable_fp16);
@@ -600,11 +600,11 @@ std::string AscendIESubgraphPass::CreateAscendIEOp(
   op_desc->SetAttr("engine_serialized_data", aie_engine_serialized_data);
   op_desc->Flush();
 
-  std::unique_ptr<ascendie::AIEInt8Calibrator> calibrator;
-  if (enable_int8 && calibration_data.size() != 0) {
-    calibrator.reset(new ascendie::AIEInt8Calibrator(calibration_data));
-    LOG(INFO) << "RUN Paddle AIE int8 calibration mode...";
-  }
+  // std::unique_ptr<ascendie::AIEInt8Calibrator> calibrator;
+  // if (enable_int8 && calibration_data.size() != 0) {
+  //   calibrator.reset(new ascendie::AIEInt8Calibrator(calibration_data));
+  //   LOG(INFO) << "RUN Paddle AIE int8 calibration mode...";
+  // }
   // When in int8 mode and calibration_mode, the program just produce the
   // calibration table data.
   bool calibration_mode =
@@ -659,7 +659,7 @@ std::string AscendIESubgraphPass::CreateAscendIEOp(
                   max_batch_size,
                   Get<int64_t>("workspace_size"),
                   static_cast<phi::DataType>(precision_mode),
-                  calibrator.get(),
+                  // calibrator.get(),
                   Get<int>("npu_device_id"),
                   with_dynamic_shape,
                   min_input_shape,
