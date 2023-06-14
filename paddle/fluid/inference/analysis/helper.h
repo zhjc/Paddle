@@ -255,6 +255,35 @@ static void SaveTrtEngineSerializedDataToFile(
   outfile.close();
 }
 
+static std::string GetAieEngineSerializedPath(const std::string &model_root,
+                                              const std::string &engine_key) {
+  return model_root + "/aie_serialized_" + engine_key;
+}
+
+static std::string GetAieEngineSerializedData(
+    const std::string &model_opt_cache_dir, const std::string &engine_key) {
+  std::string aie_serialized_path =
+      GetAieEngineSerializedPath(model_opt_cache_dir, engine_key);
+  if (FileExists(aie_serialized_path)) {
+    VLOG(3) << "Aie serialized file: " << aie_serialized_path
+            << "is found here";
+    std::ifstream infile(aie_serialized_path, std::ios::binary);
+    std::stringstream buffer;
+    buffer << infile.rdbuf();
+    std::string aie_engine_serialized_data(buffer.str());
+    return aie_engine_serialized_data;
+  }
+  return "";
+}
+
+static void SaveAieEngineSerializedDataToFile(
+    const std::string &aie_serialized_path,
+    const std::string &engine_serialized_data) {
+  std::ofstream outfile(aie_serialized_path, std::ios::binary);
+  outfile << engine_serialized_data;
+  outfile.close();
+}
+
 }  // namespace analysis
 }  // namespace inference
 }  // namespace paddle
