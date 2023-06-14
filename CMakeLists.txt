@@ -691,7 +691,7 @@ if(WITH_CPP_DIST)
     include(paddle_lib)
   endif()
 endif()
-
+include_directories(/usr/local/Ascend/ascendie/include)
 add_subdirectory(paddle)
 if(WITH_PYTHON)
   add_subdirectory(python)
