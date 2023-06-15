@@ -2882,19 +2882,19 @@ USE_TRT_CONVERTER(sparse_multihead_matmul)
 #endif
 
 #ifdef PADDLE_WITH_ASCEND
-USE_ASCEND_CONVERTER(elementwise_add_tensor)
-USE_ASCEND_CONVERTER(elementwise_add_weight)
+// USE_ASCEND_CONVERTER(elementwise_add_tensor)
+// USE_ASCEND_CONVERTER(elementwise_add_weight)
 
-USE_ASCEND_CONVERTER(elementwise_mul_tensor)
-USE_ASCEND_CONVERTER(elementwise_mul_weight)
+// USE_ASCEND_CONVERTER(elementwise_mul_tensor)
+// USE_ASCEND_CONVERTER(elementwise_mul_weight)
 
-USE_ASCEND_CONVERTER(elementwise_sub_tensor)
-USE_ASCEND_CONVERTER(elementwise_sub_weight)
+// USE_ASCEND_CONVERTER(elementwise_sub_tensor)
+// USE_ASCEND_CONVERTER(elementwise_sub_weight)
 
-USE_ASCEND_CONVERTER(elementwise_div_tensor)
-USE_ASCEND_CONVERTER(elementwise_div_weight)
+// USE_ASCEND_CONVERTER(elementwise_div_tensor)
+// USE_ASCEND_CONVERTER(elementwise_div_weight)
 
-USE_ASCEND_CONVERTER(less_than)
+// USE_ASCEND_CONVERTER(less_than)
 // USE_ASCEND_CONVERTER(logical_and)
 // USE_ASCEND_CONVERTER(slice)
 #endif
