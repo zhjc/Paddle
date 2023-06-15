@@ -124,10 +124,10 @@ void analysis::AscendIESubgraphPass::ApplyImpl(
     framework::ir::Graph *graph) const {
   framework::ir::FusePassBase::Init("ascendie_subgraph_pass", graph);
 
-  static std::once_flag aie_plugin_registered;
-  std::call_once(aie_plugin_registered, []() {
-    ascendie::plugin::AiePluginRegistry::Global()->RegistToAie();
-  });
+  // static std::once_flag aie_plugin_registered;
+  // std::call_once(aie_plugin_registered, []() {
+  //   ascendie::plugin::AiePluginRegistry::Global()->RegistToAie();
+  // });
 
   auto model_precision =
       static_cast<phi::DataType>(Get<int>("model_precision"));
