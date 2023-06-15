@@ -213,13 +213,13 @@ void analysis::AscendIESubgraphPass::ApplyImpl(
     for (auto &name : engine_names) {
       PADDLE_ENFORCE_EQ(
           paddle::inference::Singleton<
-              inference::ascendie::AIEEngineManager>::Global()
+              inference::ascendie::AscendIEEngineManager>::Global()
               .Has(name),
           true,
           platform::errors::PreconditionNotMet(
-              "AIEEnegineManager shoud has engine %s, but not found.", name));
+              "AscendIEEngineManager shoud has engine %s, but not found.", name));
       paddle::inference::Singleton<
-          inference::ascendie::AIEEngineManager>::Global()
+          inference::ascendie::AscendIEEngineManager>::Global()
           .Get(name)
           ->SetAllNodesLowerToAie(use_npu_graph);
     }
@@ -654,7 +654,7 @@ std::string AscendIESubgraphPass::CreateAscendIEOp(
   // closing the plugin fp16 may bring some improvement on accuracy.
   bool disable_aie_plugin_fp16 = Get<bool>("disable_aie_plugin_fp16");
   ascendie::AscendIEEngine *aie_engine =
-      inference::Singleton<inference::ascendie::AIEEngineManager>::Global()
+      inference::Singleton<inference::ascendie::AscendIEEngineManager>::Global()
           .Create(engine_key + std::to_string(predictor_id),
                   max_batch_size,
                   Get<int64_t>("workspace_size"),
