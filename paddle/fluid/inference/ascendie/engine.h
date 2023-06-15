@@ -625,7 +625,7 @@ class AscendIEEngine {
 
   bool EnableLowPrecisionIO() const { return low_precision_io_; }
 
-  void SetAllNodesLowerToTrt(bool all_nodes_offload_to_aie) {
+  void SetAllNodesLowerToAie(bool all_nodes_offload_to_aie) {
 
   }
 

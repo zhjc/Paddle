@@ -57,6 +57,8 @@ enum class Backend : uint8_t {
   // paddle kernel primitives backend
   KPS,
 
+  // Ascend device's backend
+  NPU,
   // custom device reference
   CUSTOM,
 
