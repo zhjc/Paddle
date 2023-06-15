@@ -28,7 +28,7 @@ if(WITH_ASCEND)
   cc_library(
     ascendie_subgraph_pass
     SRCS ascendie_subgraph_pass.cc
-    DEPS convert_to_mixed_precision subgraph_util ascendie_op_teller
+    DEPS convert_to_mixed_precision subgraph_util ascend_op_teller
          infer_io_utils)
 
   set(analysis_deps

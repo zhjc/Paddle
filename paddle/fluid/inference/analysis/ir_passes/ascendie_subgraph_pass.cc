@@ -620,28 +620,28 @@ std::string AscendIESubgraphPass::CreateAscendIEOp(
 
   // Check aie version for dynamic shape input.
 
-  if (min_input_shape.size() > 0 && AIE_VERSION < 6000) {
-    LOG_FIRST_N(WARNING, 1) << "You are using the dynamic size input mode of "
-                               "Paddle-AIE, but we found that the version of "
-                               "the AscendIE is less than 6.0, so we use the "
-                               "static shape mode instead.";
-    min_input_shape = {};
-    max_input_shape = {};
-    opt_input_shape = {};
-  }
+  // if (min_input_shape.size() > 0 && AIE_VERSION < 6000) {
+  //   LOG_FIRST_N(WARNING, 1) << "You are using the dynamic size input mode of "
+  //                              "Paddle-AIE, but we found that the version of "
+  //                              "the AscendIE is less than 6.0, so we use the "
+  //                              "static shape mode instead.";
+  //   min_input_shape = {};
+  //   max_input_shape = {};
+  //   opt_input_shape = {};
+  // }
 
-  const float aie_compile_version = ascendie::AieMajorVersion(AIE_VERSION);
-  const float aie_runtime_version =
-      ascendie::AieMajorVersion(ascendie::GetInferLibVersion());
-  if (aie_compile_version != aie_runtime_version) {
-    LOG_FIRST_N(WARNING, 1)
-        << "The Paddle Inference library is compiled with "
-        << aie_compile_version << " version AscendIE, "
-        << "but the runtime AscendIE you are using is " << aie_runtime_version
-        << " version. "
-           "This might cause serious compatibility issues. We strongly "
-           "recommend using the same AIE version at runtime.";
-  }
+  // const float aie_compile_version = ascendie::AieMajorVersion(AIE_VERSION);
+  // const float aie_runtime_version =
+  //     ascendie::AieMajorVersion(ascendie::GetInferLibVersion());
+  // if (aie_compile_version != aie_runtime_version) {
+  //   LOG_FIRST_N(WARNING, 1)
+  //       << "The Paddle Inference library is compiled with "
+  //       << aie_compile_version << " version AscendIE, "
+  //       << "but the runtime AscendIE you are using is " << aie_runtime_version
+  //       << " version. "
+  //          "This might cause serious compatibility issues. We strongly "
+  //          "recommend using the same AIE version at runtime.";
+  // }
 
   std::unordered_set<const Node *> nodes2remove(
       framework::ir::Agent(node).subgraph()->begin(),
@@ -730,19 +730,19 @@ std::string AscendIESubgraphPass::CreateAscendIEOp(
           output_mapping,
           aie_engine);
 
-  if (use_static_engine) {
-    nvinfer1::IHostMemory *serialized_engine_data = aie_engine->Serialize();
-    aie_engine_serialized_data =
-        std::string((const char *)serialized_engine_data->data(),
-                    serialized_engine_data->size());
-    SaveAieEngineSerializedDataToFile(
-        GetAieEngineSerializedPath(Get<std::string>("model_opt_cache_dir"),
-                                   engine_key),
-        aie_engine_serialized_data);
-    LOG(INFO) << "Save AIE Optimized Info to "
-              << GetAieEngineSerializedPath(
-                     Get<std::string>("model_opt_cache_dir"), engine_key);
-  }
+  // if (use_static_engine) {
+  //   nvinfer1::IHostMemory *serialized_engine_data = aie_engine->Serialize();
+  //   aie_engine_serialized_data =
+  //       std::string((const char *)serialized_engine_data->data(),
+  //                   serialized_engine_data->size());
+  //   SaveAieEngineSerializedDataToFile(
+  //       GetAieEngineSerializedPath(Get<std::string>("model_opt_cache_dir"),
+  //                                  engine_key),
+  //       aie_engine_serialized_data);
+  //   LOG(INFO) << "Save AIE Optimized Info to "
+  //             << GetAieEngineSerializedPath(
+  //                    Get<std::string>("model_opt_cache_dir"), engine_key);
+  // }
 
   return engine_key + std::to_string(predictor_id);
 }
