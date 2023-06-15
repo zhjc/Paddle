@@ -19,6 +19,8 @@ limitations under the License. */
 #include <unordered_set>
 #include <vector>
 
+#include <AscendIE.h>
+#include "paddle/fluid/inference/ascendie/helper.h"
 #include "paddle/fluid/framework/block_desc.h"
 #include "paddle/fluid/framework/op_registry.h"
 #include "paddle/fluid/framework/scope.h"
@@ -50,7 +52,7 @@ class OpConverter {
   void ConvertOp(const framework::proto::OpDesc& op,
                  const std::unordered_set<std::string>& parameters,
                  const framework::Scope& scope,
-                 AscendEngine* engine,
+                 AscendIEEngine* engine,
                  bool test_mode = false,
                  const framework::proto::BlockDesc* block = nullptr) {
     framework::OpDesc op_desc(op, nullptr);
@@ -230,7 +232,7 @@ class OpConverter {
   void ConvertBlock(const framework::proto::BlockDesc& block,
                     const std::unordered_set<std::string>& parameters,
                     const framework::Scope& scope,
-                    AscendEngine* engine) {
+                    AscendIEEngine* engine) {
     std::unique_lock<std::mutex> lk(mut_);
     for (int i = 0; i < block.ops_size(); i++) {
       const auto& op = block.ops(i);
@@ -241,7 +243,7 @@ class OpConverter {
     //   auto layer = engine->network()->getLayer(i);
     //   if (layer->GetLayerKind() == AscendIE::LayerKind::SHUFFLE) {
     //     auto* input_tensor = layer->getInput(0);
-    //     auto* output_tensor = layer->getOutput(0);
+    //     auto* output_tensor = layer->GetOutput(0);
     //     auto output_tensor_name = output_tensor->getName();
     //     auto input_tensor_name = input_tensor->getName();
     //     if (engine->DynamicRangeIsSet(input_tensor) &&
@@ -259,13 +261,13 @@ class OpConverter {
   }
 
   // The scope here should be inited with the parameter vars.
-  void ConvertBlockToAscendEngine(
+  void ConvertBlockToAIEEngine(
       framework::BlockDesc* block_desc,
       const framework::Scope& scope,
       const std::vector<std::string>& inputs,
       const std::unordered_set<std::string>& parameters,
       const std::vector<std::string>& outputs,
-      AscendEngine* engine) {
+      AscendIEEngine* engine) {
     engine->InitNetwork();
     for (auto input : inputs) {
       if (parameters.count(input)) continue;
@@ -356,7 +358,7 @@ class OpConverter {
                             const std::vector<int32_t> indices,
                             int axis = 0) {
     auto* indices_tensor = Add1DConstantLayer(indices, " ");
-    GatherLayer* gather = engine_->network()->AddGather(input, indices_tensor, axis, AscendIE::GatherOperation::DEFAULT)->getOutput(0);
+    AscendIE::Tensor* result = engine_->network()->AddGather(input, indices_tensor, axis, AscendIE::GatherOperation::DEFAULT)->GetOutput(0);
     return result;
   }
 
@@ -364,37 +366,39 @@ class OpConverter {
   // for axis length = 5, paddle allows [-5, 4]
   AscendIE::Tensor* FixNegIndices(AscendIE::Tensor* input_shape,
                                    AscendIE::Tensor* indices) {
-    int rank = input_shape->getDimensions().nbDims;
+    int rank = input_shape->GetDimensions().Size();
     std::vector<int32_t> zero = std::vector<int32_t>(rank, 0);
     std::vector<int32_t> minus_one = std::vector<int32_t>(rank, -1);
     AscendIE::Tensor* zero_tensor = Add1DConstantLayer(zero);
     AscendIE::Tensor* minus_one_tensor = Add1DConstantLayer(minus_one);
     // -1, 0
-    auto* sign = Max(Min(indices, zero_tensor), minus_one_tensor);
+    // 推理引擎不具备
+    // auto* sign = Max(Min(indices, zero_tensor), minus_one_tensor);
+    auto* sign = minus_one_tensor;
     return Sub(indices, Prod(sign, input_shape));
   }
 
   AscendIE::Tensor* Shape(AscendIE::Tensor* input) {
-    return engine_->network()->AddShape(*input)->getOutput(0);
+    return engine_->network()->AddShape(input)->GetOutput(0);
   }
 
   AscendIE::Tensor* Reshape(AscendIE::Tensor* input,
                              AscendIE::Tensor* newShape,
                              const std::string& name = "") {
-    ShuffleLayer* shuffle = engine_->AddShuffle(*input);
-    shuffle->setInput(1, *newShape);
+    AscendIE::ShuffleLayer* shuffle = engine_->network()->AddShuffle(input);
+    shuffle->SetInput(1, newShape);
     if (name != "") {
-      shuffle->setName(name.c_str());
+      shuffle->SetName(name.c_str());
     }
-    return shuffle->getOutput(0);
+    return shuffle->GetOutput(0);
   }
 
   AscendIE::Tensor* BroadcastTensor(AscendIE::Tensor* input,
                                      const int nbDims,
                                      const std::string& name = "") {
     auto oldShape = Shape(input);
-    auto oldShapeDims = oldShape->getDimensions();
-    const int rank = oldShapeDims.nbDims;
+    auto oldShapeDims = oldShape->GetDimensions();
+    const int rank = oldShapeDims.Size();
     if (rank > nbDims) {
       PADDLE_THROW(platform::errors::InvalidArgument(
           "Cannot broadcast a higher rank tensor to a lower rank tensor."));
@@ -415,8 +419,8 @@ class OpConverter {
   AscendIE::Tensor* BroadcastTensors(AscendIE::Tensor* a,
                                       AscendIE::Tensor* b,
                                       const std::string& name = "") {
-    const int aDims = a->getDimensions().size();
-    const int bDims = b->getDimensions().size();
+    const int aDims = a->GetDimensions().Size();
+    const int bDims = b->GetDimensions().Size();
     if (aDims == bDims) {
       VLOG(3) << "Broadcast two equal rank tensors";
     }
@@ -429,50 +433,50 @@ class OpConverter {
   // Concat not make rank changed
   AscendIE::Tensor* Concat(const std::vector<AscendIE::Tensor*>& inputs,
                             int axis = 0) {
-    ConcatenationLayer* layer = engine_->network()->AddConcatenation(inputs.data(), inputs.size())
+    AscendIE::ConcatenationLayer* layer = engine_->network()->AddConcatenation(inputs.data(), inputs.size());
     if (axis != 0) layer->SetAxis(axis);
-    AscendIE::Tensor* c = layer->getOutput(0);
+    AscendIE::Tensor* c = layer->GetOutput(0);
     return c;
   }
 
   AscendIE::Tensor* Sum(AscendIE::Tensor* a, AscendIE::Tensor* b) {
-    AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::ADD)->getOutput(0);
+    AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::ADD)->GetOutput(0);
     return c;
   }
 
   AscendIE::Tensor* Prod(AscendIE::Tensor* a, AscendIE::Tensor* b) {
-    AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::MUL)->getOutput(0);
+    AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::MUL)->GetOutput(0);
     return c;
   }
 
 //   AscendIE::Tensor* Min(AscendIE::Tensor* a, AscendIE::Tensor* b) {
-//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::MIN)->getOutput(0);
+//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::MIN)->GetOutput(0);
 //     return c;
 //   }
 
 //   AscendIE::Tensor* Max(AscendIE::Tensor* a, AscendIE::Tensor* b) {
-//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::MAX)->getOutput(0);
+//     AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::MAX)->GetOutput(0);
 //     return c;
 //   }
 
   AscendIE::Tensor* Sub(AscendIE::Tensor* a, AscendIE::Tensor* b) {
-    AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::SUB)->getOutput(0);
+    AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::SUB)->GetOutput(0);
     return c;
   }
 
   AscendIE::Tensor* Div(AscendIE::Tensor* a, AscendIE::Tensor* b) {
-    AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::DIV)->getOutput(0);
+    AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::DIV)->GetOutput(0);
     return c;
   }
 
   AscendIE::Tensor* FloorDiv(AscendIE::Tensor* a, AscendIE::Tensor* b) {
-    AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::FLOOR_DIV)->getOutput(0);
+    AscendIE::Tensor* c = engine_->network()->AddElementWise(a, b, AscendIE::ElementWiseOperation::FLOOR_DIV)->GetOutput(0);
     return c;
   }
 
   AscendIE::Tensor* Act(AscendIE::Tensor* a,
-                         AscendIE::ActivationType act_type) {
-    AscendIE::Tensor* c = engine_->network()->AddActivationLayer(*a, act_type)->getOutput(0);
+                         AscendIE::ActivationKind act_type) {
+    AscendIE::Tensor* c = engine_->network()->AddActivationLayer(a, act_type)->GetOutput(0);
     return c;
   }
 
@@ -485,10 +489,10 @@ class OpConverter {
         0,
         platform::errors::PreconditionNotMet(
             "The index should be greater or equal than 0, but got %d", index));
-    AscendIE::Tensor* tensor = engine_->network()->AddGather(*shape_tensor,
-                             *Add1DConstantLayer(index, " ", is_scalar),
+    AscendIE::Tensor* tensor = engine_->network()->AddGather(shape_tensor,
+                             Add1DConstantLayer(index, " ", is_scalar),
                              0,
-                             AscendIE::GatherOperation::DEFAULT)->getOutput(0);
+                             AscendIE::GatherOperation::DEFAULT)->GetOutput(0);
     return tensor;
   }
   template <typename T>
@@ -505,7 +509,7 @@ class OpConverter {
     }
 
     int data_size = std::accumulate(
-        shape.d, shape.d + shape.nbDims, 1, std::multiplies<int>());
+        shape.Data(), shape.Data() + shape.Size(), 1, std::multiplies<int>());
     std::unique_ptr<phi::DenseTensor> tmp_tensor(new phi::DenseTensor());
     tmp_tensor->Resize({data_size});
     auto* tmp_data = tmp_tensor->mutable_data<T>(platform::CPUPlace());
@@ -519,18 +523,18 @@ class OpConverter {
       asc_dtype = AscendIE::DataType::INT32;
     }
 
-    AscendEngine::Weight weight{asc_dtype,
+    AscendIEEngine::Weight weight{asc_dtype,
                                   static_cast<void*>(tmp_data),
                                   static_cast<size_t>(data_size)};
 
     auto const_layer = engine_->network()->AddConstantLayer(shape, weight.get());
-    return const_layer->getOutput(0);
+    return const_layer->GetOutput(0);
   }
 
   // Create and add 1D constant float/int32 layer
   template <typename T>
   AscendIE::Tensor* Add1DConstantLayer(const std::vector<T>& data,
-                                        const std::string& weight_name = "",
+                                      const std::string& weight_name = "",
                                         bool scalar = false) {
     if (!(std::is_same<T, float>::value ||
           std::is_same<T, platform::float16>::value ||
@@ -554,20 +558,20 @@ class OpConverter {
       asc_dtype =  AscendIE::DataType::INT32;
     }
 
-    AscendEngine::Weight weight{asc_dtype,
+    AscendIEEngine::Weight weight{asc_dtype,
                                   static_cast<void*>(tmp_data),
                                   static_cast<size_t>(data_size)};
-    AscendIE::Dims input_shape(scalar ? 0 : 1, {data_size});
+    AscendIE::Dims input_shape(scalar ? 0 : 1, (int64_t*)&data_size);
     AscendIE::ConstantLayer *constant =
-      network.AddConstantLayer(input_shape, weight.get());
-    return const_layer->getOutput(0);
+      engine_->network()->AddConstantLayer(input_shape, weight.get());
+    return constant->GetOutput(0);
   }
 
   AscendIE::Tensor* Add1DConstantLayer(AscendIE::Dims data,
                                         const std::string& weight_name = "",
                                         bool scalar = false) {
     std::vector<int> tmp_data;
-    for (int i = 0; i < data.Size(); i++) tmp_data.push_back(data.d[i]);
+    for (int i = 0; i < data.Size(); i++) tmp_data.push_back(data[i]);
     return Add1DConstantLayer(tmp_data, weight_name, scalar);
   }
 
@@ -591,18 +595,17 @@ class OpConverter {
     size_t num_out = output_tensor_names.size();
     std::string layer_name = layer_type + " (Output: ";
     for (size_t i = 0; i < num_out; i++) {
-      layer->getOutput(i)->setName(output_tensor_names[i].c_str());
-      // test_mode怎么处理？
-      engine_->SetITensor(output_tensor_names[i], layer->getOutput(i));
+      layer->GetOutput(i)->SetName(output_tensor_names[i].c_str());
+      engine_->SetITensor(output_tensor_names[i], layer->GetOutput(i));
       if (test_mode) {
         engine_->DeclareOutput(output_tensor_names[i]);
       }
       layer_name += output_tensor_names[i];
       if (i != num_out - 1) layer_name += ", ";
     }
-    layer->setName((layer_name + ")").c_str());
+    layer->SetName((layer_name + ")").c_str());
   }
-  void SetEngine(AscendEngine* engine) { engine_ = engine; }
+  void SetEngine(AscendIEEngine* engine) { engine_ = engine; }
 
   void SetBlockDesc(const framework::proto::BlockDesc* block) {
     block_ = block;
@@ -611,7 +614,7 @@ class OpConverter {
   virtual ~OpConverter() {}
 
   // Ascend engine
-  AscendEngine* engine_{nullptr};
+  AscendIEEngine* engine_{nullptr};
   // BlockDesc
   const framework::proto::BlockDesc* block_{nullptr};
 
