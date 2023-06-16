@@ -80,6 +80,9 @@ struct SimpleOpTypeSetTeller : public Teller {
     if(op_type == "set_value") {
         return true;
     }
+    if(op_type == "scale") {
+        return true;
+    }
 
     return false;
   }
