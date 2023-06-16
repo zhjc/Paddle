@@ -7,7 +7,9 @@ list(APPEND
   range_op.cc 
   softmax_op.cc
   where_op.cc
-  transpose_op.cc)
+  transpose_op.cc
+  pad3d_op.cc
+  set_value_op.cc)
 
 if(WITH_ASCEND)
   cc_library(

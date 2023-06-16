@@ -74,6 +74,12 @@ struct SimpleOpTypeSetTeller : public Teller {
     if(op_type == "softmax") {
         return true;
     }
+    if(op_type == "pad3d") {
+        return true;
+    }
+    if(op_type == "set_value") {
+        return true;
+    }
 
     return false;
   }
