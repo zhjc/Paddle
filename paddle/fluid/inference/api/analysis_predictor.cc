@@ -2895,6 +2895,9 @@ USE_ASCEND_CONVERTER(elementwise_sub_weight)
 USE_ASCEND_CONVERTER(elementwise_div_tensor)
 USE_ASCEND_CONVERTER(elementwise_div_weight)
 
+USE_ASCEND_CONVERTER(elementwise_max_tensor)
+USE_ASCEND_CONVERTER(elementwise_max_weight)
+
 USE_ASCEND_CONVERTER(less_than)
 USE_ASCEND_CONVERTER(logical_and)
 USE_ASCEND_CONVERTER(slice)
@@ -2909,6 +2912,10 @@ USE_ASCEND_CONVERTER(scale)
 
 USE_ASCEND_CONVERTER(pad3d)
 USE_ASCEND_CONVERTER(set_value)
+
+USE_ASCEND_CONVERTER(silu)
+USE_ASCEND_CONVERTER(top_k)
+USE_ASCEND_CONVERTER(top_k_v2)
 #endif
 
 

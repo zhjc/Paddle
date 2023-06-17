@@ -26,7 +26,7 @@ class WhereOpConverter : public OpConverter {
   void operator()(const framework::proto::OpDesc& op,
                   const framework::Scope& scope,
                   bool test_mode) override {
-    VLOG(3) << "convert a where op to tensorrt where layer";
+    VLOG(3) << "convert a where op to ascendie where layer";
 
     framework::OpDesc op_desc(op, nullptr);
     std::string input_x_name = op_desc.Input("X").front();

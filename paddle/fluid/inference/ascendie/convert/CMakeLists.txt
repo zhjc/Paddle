@@ -10,7 +10,9 @@ list(APPEND
   transpose_op.cc
   pad3d_op.cc
   set_value_op.cc
-  scale_op.cc)
+  scale_op.cc
+  silu_op.cc
+  top_k_op.cc)
 
 if(WITH_ASCEND)
   cc_library(
