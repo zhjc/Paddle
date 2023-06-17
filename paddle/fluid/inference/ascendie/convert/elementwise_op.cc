@@ -73,7 +73,7 @@ class ElementwiseTensorOpConverter : public OpConverter {
     int axis = -1;
     // axis here is relative to explicit batch
     if (op_type_ != "logical_or" && op_type_ != "logical_xor" &&
-        op_type_ != "logical_and") {
+        op_type_ != "logical_and" && op_type_ != "logical_not") {
       axis = PADDLE_GET_CONST(int, op_desc.GetAttr("axis"));
     }
     int real_x_rank = dims_x.Size();
@@ -170,6 +170,7 @@ const std::unordered_map<std::string, AscendIE::ElementWiseOperation>
         {"less_than", AscendIE::ElementWiseOperation::LESS},
         {"max", AscendIE::ElementWiseOperation::MAX},
         // {"logical_and", AscendIE::ElementWiseOperation::AND},
+        // {"logical_not", AscendIE::ElementWiseOperation::NOT},
 };
 
 class ElementwiseTensorAddOpConverter : public ElementwiseTensorOpConverter {
@@ -207,6 +208,12 @@ class ElementwiseTensorMaxOpConverter : public ElementwiseTensorOpConverter {
 //     : public ElementwiseTensorOpConverter {
 //  public:
 //   ElementwiseTensorLogicalAndOpConverter() { op_type_ = "logical_and"; }
+// };
+
+// class ElementwiseTensorLogicalNotOpConverter
+//     : public ElementwiseTensorOpConverter {
+//  public:
+//   ElementwiseTensorLogicalNotOpConverter() { op_type_ = "logical_not"; }
 // };
 
 // The diff between `pow` and `elementwise_pow` is in:
@@ -265,5 +272,6 @@ REGISTER_ASCEND_OP_CONVERTER(elementwise_max_tensor,
 REGISTER_ASCEND_OP_CONVERTER(less_than, ElementwiseTensorLessThanOpConverter);
 
 // REGISTER_ASCEND_OP_CONVERTER(logical_and, ElementwiseTensorLogicalAndOpConverter);
+// REGISTER_ASCEND_OP_CONVERTER(logical_not, ElementwiseTensorLogicalNotOpConverter);
 
 REGISTER_ASCEND_OP_CONVERTER(pow, PowOpConverter);
