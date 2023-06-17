@@ -121,6 +121,11 @@ if(WITH_ONNXRUNTIME)
       ${CMAKE_CURRENT_SOURCE_DIR}/api/onnxruntime_predictor.cc)
 endif()
 
+# link_directories(/home/h00449357/code/ascend-inference/output/lib)
+link_directories(/usr/local/Ascend/ascendie/lib)
+
+link_libraries(ascendie)
+
 # Create shared inference library
 cc_library(
   paddle_inference_shared SHARED

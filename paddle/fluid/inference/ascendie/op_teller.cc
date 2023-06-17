@@ -46,6 +46,44 @@ struct SimpleOpTypeSetTeller : public Teller {
         return true;
     }
     */
+    auto all_element_op_type = std::unordered_set<std::string>({
+      "elementwise_add", "elementwise_mul",
+      "elementwise_sub", "elementwise_div",
+    });
+    auto all_logic_op_type = std::unordered_set<std::string>({
+      "less_than"
+    });
+    if (all_element_op_type.find(op_type) != all_element_op_type.end()) {
+      return true;
+    }
+    if (all_logic_op_type.find(op_type) != all_logic_op_type.end()) {
+      return true;
+    }
+    if(op_type == "where") {
+        return true;
+    }
+    if(op_type == "transpose") {
+        return true;
+    }
+    if(op_type == "concat") {
+        return true;
+    }
+    if(op_type == "range") {
+        return true;
+    }
+    if(op_type == "softmax") {
+        return true;
+    }
+    if(op_type == "pad3d") {
+        return true;
+    }
+    if(op_type == "set_value") {
+        return true;
+    }
+    if(op_type == "scale") {
+        return true;
+    }
+
     return false;
   }
 

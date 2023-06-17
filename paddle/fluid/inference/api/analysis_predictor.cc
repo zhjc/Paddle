@@ -47,6 +47,7 @@
 #include "paddle/fluid/inference/api/paddle_inference_api.h"
 #include "paddle/fluid/inference/api/paddle_inference_pass.h"
 #include "paddle/fluid/inference/api/resource_manager.h"
+#include "paddle/fluid/inference/ascendie/convert/op_converter.h"
 #include "paddle/fluid/inference/utils/io_utils.h"
 #include "paddle/fluid/inference/utils/model_utils.h"
 #include "paddle/fluid/inference/utils/singleton.h"
@@ -2880,6 +2881,36 @@ USE_TRT_CONVERTER(sparse_fc)
 USE_TRT_CONVERTER(sparse_multihead_matmul)
 #endif
 #endif
+
+#ifdef PADDLE_WITH_ASCEND
+USE_ASCEND_CONVERTER(elementwise_add_tensor)
+USE_ASCEND_CONVERTER(elementwise_add_weight)
+
+USE_ASCEND_CONVERTER(elementwise_mul_tensor)
+USE_ASCEND_CONVERTER(elementwise_mul_weight)
+
+USE_ASCEND_CONVERTER(elementwise_sub_tensor)
+USE_ASCEND_CONVERTER(elementwise_sub_weight)
+
+USE_ASCEND_CONVERTER(elementwise_div_tensor)
+USE_ASCEND_CONVERTER(elementwise_div_weight)
+
+USE_ASCEND_CONVERTER(less_than)
+USE_ASCEND_CONVERTER(logical_and)
+USE_ASCEND_CONVERTER(slice)
+
+USE_ASCEND_CONVERTER(where)
+USE_ASCEND_CONVERTER(transpose)
+
+USE_ASCEND_CONVERTER(concat)
+USE_ASCEND_CONVERTER(range)
+USE_ASCEND_CONVERTER(softmax)
+USE_ASCEND_CONVERTER(scale)
+
+USE_ASCEND_CONVERTER(pad3d)
+USE_ASCEND_CONVERTER(set_value)
+#endif
+
 
 namespace paddle_infer {
 

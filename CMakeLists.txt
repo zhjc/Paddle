@@ -498,7 +498,7 @@ else()
   endif()
 endif()
 
-if(WITH_HETERPS AND WITH_PSLIB)
+if(WITH_HETERPS AND WITH_PSLIB OR WITH_ASCEND)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
 endif()
 
@@ -691,6 +691,10 @@ if(WITH_CPP_DIST)
     include(paddle_lib)
   endif()
 endif()
+
+# include_directories(/home/h00449357/code/ascend-inference/include)
+include_directories(/usr/local/Ascend/ascendie/include)
+
 
 add_subdirectory(paddle)
 if(WITH_PYTHON)

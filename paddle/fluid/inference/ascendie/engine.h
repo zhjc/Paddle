@@ -25,6 +25,9 @@ limitations under the License. */
 #include <utility>
 #include <vector>
 
+#include <AscendIE.h>
+#include "runtime/Runtime.h"
+#include "paddle/fluid/inference/ascendie/helper.h"
 #include "paddle/fluid/framework/lod_tensor.h"
 #include "paddle/fluid/framework/scope.h"
 #include "paddle/fluid/framework/tensor.h"
@@ -64,7 +67,7 @@ AscendIE::DataType FluidDataType2Ascend(FluidDT type) {
       PADDLE_THROW(platform::errors::InvalidArgument(
           "unsupported datatype in AIE op converter, type: %s. "
           "Boolean type is supported as AIE input/output "
-          "using TensorRT v8.4+.",
+          "using Ascend v8.4+.",
           VarType_Type_Name(type)));
   }
   return AscendIE::DataType::INT32;
@@ -105,7 +108,7 @@ AscendIE::Dims Vec2ASCEND_Dims(const std::vector<T>& shape,
             input,
             ShapeStr(shape)));
       }
-      return AscendIE::Dims(3, {shape[1], shape[2], shape[3]});
+      return AscendIE::Dims(3, &shape[1]);
     } else if (shape.size() == 5UL) {
       if (shape[2] == -1 || shape[3] == -1 || shape[4] == -1) {
         PADDLE_THROW(platform::errors::InvalidArgument(
@@ -114,7 +117,7 @@ AscendIE::Dims Vec2ASCEND_Dims(const std::vector<T>& shape,
             input,
             ShapeStr(shape)));
       }
-      return AscendIE::Dims(4, {shape[1], shape[2], shape[3], shape[4]});
+      return AscendIE::Dims(4, &shape[1]);
     } else if (shape.size() == 3UL) {
       if (shape[1] == -1 || shape[2] == -1) {
         PADDLE_THROW(platform::errors::InvalidArgument(
@@ -123,7 +126,7 @@ AscendIE::Dims Vec2ASCEND_Dims(const std::vector<T>& shape,
             input,
             ShapeStr(shape)));
       }
-      return AscendIE::Dims(2, {shape[1], shape[2]});
+      return AscendIE::Dims(2, &shape[1]);
     } else if (shape.size() == 2UL) {
       if (shape[1] == -1) {
         PADDLE_THROW(platform::errors::InvalidArgument(
@@ -132,7 +135,7 @@ AscendIE::Dims Vec2ASCEND_Dims(const std::vector<T>& shape,
             input,
             ShapeStr(shape)));
       }
-      AscendIE::Dims dims(1, {shape[1]})
+      AscendIE::Dims dims(1, &shape[1]);
       return dims;
     }
     // static shape doesn't support 1D op so far.
@@ -144,21 +147,15 @@ AscendIE::Dims Vec2ASCEND_Dims(const std::vector<T>& shape,
                           input,
                           ShapeStr(shape)));
 
-    AscendIE::Dims dims(shape.size() - 1);
-    for (size_t i = 1; i < shape.size(); i++) {
-      dims[i - 1] = shape[i];
-    }
+    AscendIE::Dims dims(shape.size() - 1, &shape[1]);
     return dims;
   } else {
     if (shape.size() == 4UL) {
-      return AscendIE::Dims4(4, {shape[0], shape[1], shape[2], shape[3]});
+      return AscendIE::Dims(4, &shape[0]);
     } else if (shape.size() == 3UL) {
-      return AscendIE::Dims3(3, {shape[0], shape[1], shape[2]});
+      return AscendIE::Dims(3, &shape[0]);
     }
-    AscendIE::Dims dims(shape.size());
-    for (size_t i = 0; i < shape.size(); i++) {
-      dims[i] = shape[i];
-    }
+    AscendIE::Dims dims(shape.size(), &shape[0]);
     return dims;
   }
 }
@@ -170,7 +167,7 @@ AscendIE::Dims Vec2ASCEND_Dims(const std::vector<T>& shape,
  * There are two alternative ways to use it, one is to build from a paddle
  * protobuf model, another way is to manually construct the network.
  */
-class AscendEngine {
+class AscendIEEngine {
   using DescType = ::paddle::framework::proto::BlockDesc;
   using ShapeMapType = std::map<std::string, std::vector<int>>;
   using PredictorID = int;
@@ -182,7 +179,7 @@ class AscendEngine {
     Weight() = default;
     Weight(AscendIE::DataType dtype, void* value, size_t num_elem) {
       w_.type = dtype;
-      w_.values = value;
+      w_.value = value;
       w_.count = num_elem;
     }
     const AscendIE::WeightsBuf& get() { return w_; }
@@ -191,7 +188,7 @@ class AscendEngine {
 
     void SetDataType(phi::DataType type);
 
-    void SetValues(const void* values) { w_.values = values; }
+    void SetValues(const void* values) { w_.value = values; }
 
     void SetCount(int64_t num) { w_.count = num; }
 
@@ -201,7 +198,7 @@ class AscendEngine {
     AscendIE::WeightsBuf w_;
   };
 
-  AscendEngine(int max_batch,
+  AscendIEEngine(int max_batch,
                  int64_t max_workspace,
                  phi::DataType precision = phi::DataType::FLOAT32,
                  int device_id = 0,
@@ -228,7 +225,7 @@ class AscendEngine {
         disable_aie_plugin_fp16_(disable_aie_plugin_fp16),
         model_precision_(model_precision) {}
 
-  ~AscendEngine() {
+  ~AscendIEEngine() {
     for (auto& attr : attrs_) {
       if (attr_dels_.find(attr.first) != attr_dels_.end()) {
         attr_dels_[attr.first]();
@@ -239,7 +236,7 @@ class AscendEngine {
   }
 
   // Add an input and set its name, data type and dimension.
-  AscendIE::ITensor* DeclareInput(const std::string& name,
+  AscendIE::Tensor* DeclareInput(const std::string& name,
                                   AscendIE::DataType dtype,
                                   const AscendIE::Dims& dim);
   // Set the offset-th output from a layer as the network's output, and set its
@@ -263,7 +260,7 @@ class AscendEngine {
   std::unordered_map<std::string, AscendIE::Tensor*>* GetITensorMap();
 
   AscendIE::Engine* engine() { return infer_engine_.get(); }
-  AscendIE::ExecutionContext* context();
+  AscendIE::Context* context();
 
   int GetProfileIndex() {
     if (max_profile_num_ > 1) {
@@ -298,16 +295,14 @@ class AscendEngine {
 
   bool WithFp16() {
     bool enable_fp16 = (precision_ == phi::DataType::FLOAT16);
-    bool support_fp16 = infer_builder_->platformHasFastFp16();
     // below is consistent with setFlag in engine.cc
     bool fall_back_fp16 = WithInt8() && !use_dla_;
-    return (enable_fp16 || fall_back_fp16) && support_fp16;
+    return (enable_fp16 || fall_back_fp16);
   }
 
   bool WithInt8() {
     bool enable_int8 = (precision_ == phi::DataType::INT8);
-    bool support_int8 = infer_builder_->platformHasFastInt8();
-    return enable_int8 && support_int8;
+    return enable_int8;
   }
 
   int GetDeviceId() { return device_id_; }
@@ -369,11 +364,11 @@ class AscendEngine {
   void SetWithInterleaved(bool with_interleaved) {
     with_interleaved_ = with_interleaved;
   }
-  void SetTransformerPosid(std::string tensorrt_transformer_posid) {
-    tensorrt_transformer_posid_ = tensorrt_transformer_posid;
+  void SetTransformerPosid(std::string ascend_transformer_posid) {
+    ascend_transformer_posid_ = ascend_transformer_posid;
   }
-  void SetTransformerMaskid(std::string tensorrt_transformer_maskid) {
-    tensorrt_transformer_maskid_ = tensorrt_transformer_maskid;
+  void SetTransformerMaskid(std::string ascend_transformer_maskid) {
+    ascend_transformer_maskid_ = ascend_transformer_maskid;
   }
   void ClearWeights() {
     for (auto& weight_pair : weight_map) {
@@ -382,7 +377,7 @@ class AscendEngine {
   }
 
   // NOTE: The func bellow was modified to adapt the dynamic shape.
-  // Initialize the inference network, so that TensorRT layers can add to this
+  // Initialize the inference network, so that ascend layers can add to this
   // network.
   void InitNetwork();
   // After finishing adding ops, freeze this network and creates the execution
@@ -390,8 +385,13 @@ class AscendEngine {
   void FreezeNetwork();
   void Execute(int batch_size,
                std::vector<void*>* buffers,
-               cudaStream_t stream = nullptr);
+               AscendIE::aieStream stream = nullptr);
 
+  bool Enqueue(AscendIE::Context *context,
+               std::vector<void *> *buffers,
+               int batch,
+               AscendIE::aieStream stream);
+               
   AscendIE::Network* network() { return infer_network_.get(); }
 
   ShapeMapType& min_input_shape() { return min_input_shape_; }
@@ -518,11 +518,11 @@ class AscendEngine {
   bool use_varseqlen() { return use_varseqlen_; }
   bool with_ernie() { return with_ernie_; }
   bool with_interleaved() { return with_interleaved_; }
-  std::string tensorrt_transformer_posid() {
-    return tensorrt_transformer_posid_;
+  std::string ascend_transformer_posid() {
+    return ascend_transformer_posid_;
   }
-  std::string tensorrt_transformer_maskid() {
-    return tensorrt_transformer_maskid_;
+  std::string ascend_transformer_maskid() {
+    return ascend_transformer_maskid_;
   }
   bool disable_aie_plugin_fp16() { return disable_aie_plugin_fp16_; }
   bool with_dynamic_shape() { return with_dynamic_shape_; }
@@ -625,14 +625,11 @@ class AscendEngine {
 
   bool EnableLowPrecisionIO() const { return low_precision_io_; }
 
-  void SetAllNodesLowerToTrt(bool all_nodes_offload_to_aie) {
-    // all nodes are in aie, so we can use cudaGraph to optimize runtime.
-    // startup_with_cudagraph_ = all_nodes_offload_to_aie;s
+  void SetAllNodesLowerToAie(bool all_nodes_offload_to_aie) {
+
   }
 
  private:
-  // Each ICudaEngine object is bound to a specific NPU when it is instantiated,
-  // ensure that the thread is associated with the correct device by calling
   // freshDeviceId().
   void freshDeviceId();
   // Used for convert weight into Itensor
@@ -672,13 +669,13 @@ class AscendEngine {
   int dla_core_{0};
   bool with_ernie_{false};
   bool with_interleaved_{false};
-  std::string tensorrt_transformer_posid_;
-  std::string tensorrt_transformer_maskid_;
+  std::string ascend_transformer_posid_;
+  std::string ascend_transformer_maskid_;
   // max data size for the buffers.
   std::unordered_map<std::string /*name*/, AscendIE::Tensor* /*ITensor*/>
       itensor_map_;
 
-  // TensorRT related internal members
+  // ascend related internal members
   infer_ptr<AscendIE::Builder> infer_builder_;
   infer_ptr<AscendIE::Network> infer_network_;
   infer_ptr<AscendIE::Runtime> infer_runtime_;
@@ -689,23 +686,24 @@ class AscendEngine {
 
   std::unordered_map<std::string, paddle::any> attrs_;
   std::unordered_map<std::string, std::function<void(void)>> attr_dels_;
+  int binding_num_;
   std::mutex mutex_;
   bool use_inspector_;
 
  public:
   thread_local static int predictor_id_per_thread;
-};  // class AscendEngine
+};  // class AscendIEEngine
 
 
-class AscendEngineManager {
+class AscendIEEngineManager {
   using PredictorID = int;
   using AllocationPtr = phi::Allocator::AllocationPtr;
 
  public:
-  AscendEngineManager() {
+  AscendIEEngineManager() {
     // createInferBuilder loads aie kernels and take a few second
     // But as long as one IBuilder lives, aie kernel will not be unloaded
-    // Hence, a persistent IBuilder to avoid TensorRT unload/reload kernels
+    // Hence, a persistent IBuilder to avoid ascend unload/reload kernels
     if (FLAGS_aie_ibuilder_cache) {
       holder_.reset(AscendIE::Builder::CreateInferBuilder("Ascend910A"));
     }
@@ -722,12 +720,12 @@ class AscendEngineManager {
     return engines_.at(name).get() != nullptr;
   }
 
-  AscendEngine* Get(const std::string& name) const {
+  AscendIEEngine* Get(const std::string& name) const {
     std::lock_guard<std::mutex> lock(mutex_);
     return engines_.at(name).get();
   }
 
-  AscendEngine* Create(
+  AscendIEEngine* Create(
       std::string name,
       int max_batch,
       int64_t max_workspace,
@@ -742,7 +740,7 @@ class AscendEngineManager {
       const std::map<std::string, std::vector<int>> optim_shape_tensor = {},
       bool disable_aie_plugin_fp16 = false,
       phi::DataType model_precision = phi::DataType::FLOAT32) {
-    auto* p = new AscendEngine(max_batch,
+    auto* p = new AscendIEEngine(max_batch,
                                  max_workspace,
                                  precision,
                                  device_id,
@@ -778,7 +776,7 @@ class AscendEngineManager {
   }
 
   void updateContextMemorySize(size_t mem_size, PredictorID predictor_id) {
-    VLOG(3) << "TensorRT engine context memory size is "
+    VLOG(3) << "Ascend engine context memory size is "
             << mem_size / 1024.0 / 1024.0 << "MiB in predictor id "
             << predictor_id;
 
@@ -795,8 +793,8 @@ class AscendEngineManager {
   mutable std::mutex mutex_;
   size_t max_ctx_mem_size_{0};
   std::unordered_map<PredictorID, AllocationPtr> context_memorys_;
-  std::unordered_map<std::string, std::unique_ptr<AscendEngine>> engines_;
-  infer_ptr<Ascend::Builder> holder_;
+  std::unordered_map<std::string, std::unique_ptr<AscendIEEngine>> engines_;
+  infer_ptr<AscendIE::Builder> holder_;
 };
 
 }  // namespace ascendie

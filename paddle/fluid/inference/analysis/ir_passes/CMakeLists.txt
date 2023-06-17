@@ -23,6 +23,28 @@ if(WITH_GPU AND TENSORRT_FOUND)
       CACHE INTERNAL "")
 endif()
 
+
+if(WITH_ASCEND)
+  cc_library(
+    ascendie_subgraph_pass
+    SRCS ascendie_subgraph_pass.cc
+    DEPS convert_to_mixed_precision subgraph_util ascend_op_teller
+         infer_io_utils)
+
+  set(analysis_deps
+      ${analysis_deps} subgraph_util ascendie_subgraph_pass
+      CACHE INTERNAL "")
+
+  set(pass_file
+      ${PADDLE_BINARY_DIR}/paddle/fluid/inference/api/paddle_inference_pass.h.tmp
+  )
+  file(APPEND ${pass_file} "USE_PASS(ascendie_subgraph_pass);\n")
+  set(INFER_IR_PASSES
+      ${INFER_IR_PASSES} ascendie_subgraph_pass
+      CACHE INTERNAL "")
+endif()
+
+
 if(WITH_LITE)
   cc_library(
     lite_subgraph_pass
