@@ -26,7 +26,7 @@ class Pad3dOpConverter : public OpConverter {
   void operator()(const framework::proto::OpDesc& op,
                   const framework::Scope& scope,
                   bool test_mode) override {
-    VLOG(3) << "convert a pad3d op to tensorrt pad3d layer";
+    VLOG(3) << "convert a pad3d op to ascendie pad3d layer";
 
     framework::OpDesc op_desc(op, nullptr);
 
@@ -60,7 +60,7 @@ class Pad3dOpConverter : public OpConverter {
                           "Expected paddings size is %d, but received %d.",
                           input_dim * 2 - 4,
                           pad_size));
-    // convert paddle pad to tensorrt pad
+    // convert paddle pad to ascendie pad
     std::vector<int> shuffle_index{4, 2, 0, 5, 3, 1};
     std::vector<AscendIE::Tensor*> shuffle_inputs;
     for (int i = 0; i < pad_size; i++) {
@@ -103,10 +103,7 @@ class Pad3dOpConverter : public OpConverter {
                                               AscendIE::ElementWiseOperation::ADD)
                ->GetOutput(0);
     // add slice layer
-    std::vector<int64_t> dimVec;
-    for (size_t i = 0; i < input_dim; i++) {
-      dimVec.push_back(1);
-    }
+    std::vector<int64_t> dimVec(input_dim, 1);
     AscendIE::Dims stride(dimVec);
 
     auto const& dummy = stride;
@@ -164,7 +161,7 @@ class Pad3dOpConverter : public OpConverter {
   }
 };
 
-}  // namespace tensorrt
+}  // namespace ascendie
 }  // namespace inference
 }  // namespace paddle
 

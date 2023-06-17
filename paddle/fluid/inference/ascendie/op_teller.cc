@@ -49,6 +49,7 @@ struct SimpleOpTypeSetTeller : public Teller {
     auto all_element_op_type = std::unordered_set<std::string>({
       "elementwise_add", "elementwise_mul",
       "elementwise_sub", "elementwise_div",
+      "elementwise_max",
     });
     auto all_logic_op_type = std::unordered_set<std::string>({
       "less_than"
@@ -81,6 +82,18 @@ struct SimpleOpTypeSetTeller : public Teller {
         return true;
     }
     if(op_type == "scale") {
+      return true;
+    }
+    if(op_type == "pow") {
+        return true;
+    }
+    if(op_type == "silu") {
+        return true;
+    }
+    if(op_type == "top_k") {
+        return true;
+    }
+    if(op_type == "top_k_v2") {
         return true;
     }
 
