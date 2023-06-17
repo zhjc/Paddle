@@ -96,6 +96,9 @@ struct SimpleOpTypeSetTeller : public Teller {
     if(op_type == "top_k_v2") {
         return true;
     }
+    if(op_type == "lookup_table") {
+        return true;
+    }
 
     return false;
   }

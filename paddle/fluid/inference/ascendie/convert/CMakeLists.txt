@@ -12,7 +12,8 @@ list(APPEND
   set_value_op.cc
   scale_op.cc
   silu_op.cc
-  top_k_op.cc)
+  top_k_op.cc
+  lookup_table.cc)
 
 if(WITH_ASCEND)
   cc_library(
