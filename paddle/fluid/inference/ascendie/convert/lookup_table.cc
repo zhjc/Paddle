@@ -23,7 +23,7 @@ class LookupTableOpConverter : public OpConverter {
     VLOG(3)
         << "convert lookup_table(lookup_table_v2) op to TensorRT IGatherLayer";
     
-	framework::OpDesc op_desc(op, nullptr);
+	  framework::OpDesc op_desc(op, nullptr);
 	
     auto ids_name = op_desc.Input("Ids").front();
     auto w_name = op_desc.Input("W").front();
