@@ -284,6 +284,78 @@ void AscendIEEngine::SetRuntimeBatch(size_t batch_size) {
   runtime_batch_ = batch_size;
 }
 
+AscendIEEngine::Weight AscendIEEngine::GetFp32TrtWeight(
+    const std::string &name, const phi::DenseTensor &weight_tensor) {
+  static int name_suffix_counter = 0;
+  std::string name_suffix = std::to_string(name_suffix_counter);
+  std::string splitter = "__";
+  std::string name_with_suffix = name + splitter + name_suffix;
+  platform::CPUPlace cpu_place;
+  PADDLE_ENFORCE_EQ(weight_map.count(name_with_suffix),
+                    0,
+                    platform::errors::AlreadyExists(
+                        "The weight named %s is set into the weight map "
+                        "twice in AIE OP converter.",
+                        name_with_suffix));
+  weight_map[name_with_suffix].reset(new phi::DenseTensor());
+  weight_map[name_with_suffix]->Resize(weight_tensor.dims());
+
+  AscendIEEngine::Weight weight;
+  weight.SetCount(weight_tensor.numel());
+
+  // if trt not support dtype, we need to cast to fp32.
+  if (weight_tensor.dtype() == phi::DataType::BFLOAT16) {
+    phi::DenseTensor bf16_tensor;
+    bf16_tensor.clear();
+    paddle::framework::TensorCopySync(
+        weight_tensor, platform::CPUPlace(), &bf16_tensor);
+    weight_map[name_with_suffix]->set_type(phi::DataType::FLOAT32);
+    auto *fp32_data =
+        weight_map[name_with_suffix]->mutable_data<float>(platform::CPUPlace());
+    auto *bf16_data = bf16_tensor.mutable_data<bfloat16>(platform::CPUPlace());
+    for (int i = 0; i < weight_tensor.numel(); i++) {
+      fp32_data[i] = static_cast<float>(bf16_data[i]);
+    }
+    weight.SetDataType(phi::DataType::FLOAT32);
+    weight.SetValues(fp32_data);
+  } else if (weight_tensor.dtype() == phi::DataType::FLOAT16) {
+    phi::DenseTensor fp16_tensor;
+    fp16_tensor.clear();
+    paddle::framework::TensorCopySync(
+        weight_tensor, platform::CPUPlace(), &fp16_tensor);
+    weight_map[name_with_suffix]->set_type(phi::DataType::FLOAT32);
+    auto *fp32_data =
+        weight_map[name_with_suffix]->mutable_data<float>(platform::CPUPlace());
+    auto *fp16_data = fp16_tensor.mutable_data<float16>(platform::CPUPlace());
+    for (int i = 0; i < weight_tensor.numel(); i++) {
+      fp32_data[i] = static_cast<float>(fp16_data[i]);
+    }
+    weight.SetDataType(phi::DataType::FLOAT32);
+    weight.SetValues(fp32_data);
+  } else if (weight_tensor.dtype() == phi::DataType::INT64) {
+    phi::DenseTensor int64_tensor;
+    int64_tensor.clear();
+    paddle::framework::TensorCopySync(
+        weight_tensor, platform::CPUPlace(), &int64_tensor);
+    weight_map[name_with_suffix]->set_type(phi::DataType::INT32);
+    auto *int32_data = weight_map[name_with_suffix]->mutable_data<int32_t>(
+        platform::CPUPlace());
+    auto *int64_data = int64_tensor.mutable_data<int64_t>(platform::CPUPlace());
+    for (int i = 0; i < weight_tensor.numel(); i++) {
+      int32_data[i] = int64_data[i];
+    }
+    weight.SetDataType(phi::DataType::INT32);
+    weight.SetValues(int32_data);
+  } else {
+    paddle::framework::TensorCopySync(
+        weight_tensor, cpu_place, weight_map[name_with_suffix].get());
+    weight.SetDataType(weight_tensor.dtype());
+    weight.SetValues(weight_map[name_with_suffix]->data());
+  }
+  name_suffix_counter += 1;
+  return weight;
+}
+
 AscendIEEngine::Weight AscendIEEngine::GetTrtWeight(
     const std::string &name, const phi::DenseTensor &weight_tensor) {
   static int name_suffix_counter = 0;

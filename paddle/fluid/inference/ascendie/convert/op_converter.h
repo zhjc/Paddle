@@ -35,6 +35,8 @@ namespace paddle {
 namespace inference {
 namespace ascendie {
 
+enum ReduceType { kRedSum, kRedMax, kRedMin, kRedProd };
+
 /*
  * Convert Op from Fluid to Ascend Engine.
  */

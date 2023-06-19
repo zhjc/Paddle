@@ -84,6 +84,15 @@ struct SimpleOpTypeSetTeller : public Teller {
     if(op_type == "scale") {
       return true;
     }
+    // if(op_type == "c_allreduce_sum") {
+    //     return true;
+    // }
+    // if(op_type == "c_concat") {
+    //     return true;
+    // }
+    // if(op_type == "layer_norm") {
+    //     return true;
+    // }
     if(op_type == "pow") {
         return true;
     }
