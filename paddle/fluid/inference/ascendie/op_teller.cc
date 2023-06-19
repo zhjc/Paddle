@@ -113,7 +113,13 @@ struct SimpleOpTypeSetTeller : public Teller {
     }
     if(op_type == "unsqueeze2") {
         return true;
-    }                     
+    }
+    if(op_type == "gelu") {
+        return true;
+    }
+    if(op_type == "logsigmoid") {
+        return true;
+    }
     return false;
   }
 
