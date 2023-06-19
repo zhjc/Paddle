@@ -73,7 +73,7 @@ class ElementwiseTensorOpConverter : public OpConverter {
     int axis = -1;
     // axis here is relative to explicit batch
     if (op_type_ != "logical_or" && op_type_ != "logical_xor" &&
-        op_type_ != "logical_and") {
+        op_type_ != "logical_and" && op_type_ != "logical_not") {
       axis = PADDLE_GET_CONST(int, op_desc.GetAttr("axis"));
     }
     int real_x_rank = dims_x.Size();
@@ -168,7 +168,9 @@ const std::unordered_map<std::string, AscendIE::ElementWiseOperation>
         {"sub", AscendIE::ElementWiseOperation::SUB},
         {"div", AscendIE::ElementWiseOperation::DIV},
         {"less_than", AscendIE::ElementWiseOperation::LESS},
+        {"max", AscendIE::ElementWiseOperation::MAX},
         // {"logical_and", AscendIE::ElementWiseOperation::AND},
+        // {"logical_not", AscendIE::ElementWiseOperation::NOT},
 };
 
 class ElementwiseTensorAddOpConverter : public ElementwiseTensorOpConverter {
@@ -197,11 +199,48 @@ class ElementwiseTensorLessThanOpConverter
   ElementwiseTensorLessThanOpConverter() { op_type_ = "less_than"; }
 };
 
+class ElementwiseTensorMaxOpConverter : public ElementwiseTensorOpConverter {
+ public:
+  ElementwiseTensorMaxOpConverter() { op_type_ = "max"; }
+};
+
 // class ElementwiseTensorLogicalAndOpConverter
 //     : public ElementwiseTensorOpConverter {
 //  public:
 //   ElementwiseTensorLogicalAndOpConverter() { op_type_ = "logical_and"; }
 // };
+
+// class ElementwiseTensorLogicalNotOpConverter
+//     : public ElementwiseTensorOpConverter {
+//  public:
+//   ElementwiseTensorLogicalNotOpConverter() { op_type_ = "logical_not"; }
+// };
+
+// The diff between `pow` and `elementwise_pow` is in:
+// https://github.com/PaddlePaddle/Paddle/blob/release/2.4/python/paddle/tensor/math.py#L420
+class PowOpConverter : public OpConverter {
+ public:
+  PowOpConverter() {}
+  void operator()(const framework::proto::OpDesc& op,
+                  const framework::Scope& scope,
+                  bool test_mode) override {
+    VLOG(3) << "Convert a pow op to Ascend IElementWiseLayer";
+    framework::OpDesc op_desc(op, nullptr);
+    auto* X = engine_->GetITensor(op_desc.Input("X").front());
+    float factor = PADDLE_GET_CONST(float, op_desc.GetAttr("factor"));
+    AscendIE::Dims dims_x = X->GetDimensions();
+    auto output_name = op_desc.Output("Out")[0];
+
+    std::vector<int64_t> aie_dim_vec(dims_x.Size(), 1);
+    AscendIE::Dims aie_dims_y(aie_dim_vec);
+
+    std::vector<float> w_data{factor};
+    auto* Y = AddConstantLayer(w_data.data(), aie_dims_y);
+
+    auto* layer = engine_->network()->AddElementWise(X, Y, AscendIE::ElementWiseOperation::POW);
+    RreplenishLayerAndOutput(layer, "elementwise", {output_name}, test_mode);
+  }
+};
 
 
 }  // namespace ascendie
@@ -216,7 +255,8 @@ REGISTER_ASCEND_OP_CONVERTER(elementwise_sub_weight,
                           ElementwiseTensorSubOpConverter);
 REGISTER_ASCEND_OP_CONVERTER(elementwise_div_weight,
                           ElementwiseTensorDivOpConverter);
-
+REGISTER_ASCEND_OP_CONVERTER(elementwise_max_weight,
+                          ElementwiseTensorMaxOpConverter);
 
 REGISTER_ASCEND_OP_CONVERTER(elementwise_add_tensor,
                           ElementwiseTensorAddOpConverter);
@@ -226,7 +266,12 @@ REGISTER_ASCEND_OP_CONVERTER(elementwise_div_tensor,
                           ElementwiseTensorDivOpConverter);
 REGISTER_ASCEND_OP_CONVERTER(elementwise_mul_tensor,
                           ElementwiseTensorMulOpConverter);
+REGISTER_ASCEND_OP_CONVERTER(elementwise_max_tensor,
+                          ElementwiseTensorMaxOpConverter);
 
 REGISTER_ASCEND_OP_CONVERTER(less_than, ElementwiseTensorLessThanOpConverter);
 
 // REGISTER_ASCEND_OP_CONVERTER(logical_and, ElementwiseTensorLogicalAndOpConverter);
+// REGISTER_ASCEND_OP_CONVERTER(logical_not, ElementwiseTensorLogicalNotOpConverter);
+
+REGISTER_ASCEND_OP_CONVERTER(pow, PowOpConverter);

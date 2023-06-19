@@ -10,7 +10,16 @@ list(APPEND
   transpose_op.cc
   pad3d_op.cc
   set_value_op.cc
-  scale_op.cc)
+  scale_op.cc
+  silu_op.cc
+  top_k_op.cc
+  lookup_table.cc
+  fill_any_like_op.cc
+  fill_constant_op.cc
+  split_op.cc
+  gelu_op.cc
+  logsigmoid_op.cc
+  unsqueeze2_op.cc)
 
 if(WITH_ASCEND)
   cc_library(

@@ -37,7 +37,7 @@ class OpDesc;
 namespace paddle {
 namespace inference {
 namespace ascendie {
-// we use tensorrt ScatterElement to generate set value
+// we use ascendie ScatterElement to generate set value
 // For example, if indices has dimensions [N,C,H,W] and axis is 2, then the
 // updates happen as: for n in [0,n)
 //     for c in [0,n)
@@ -50,7 +50,7 @@ class SetValueConverter : public OpConverter {
   void operator()(const framework::proto::OpDesc& op,
                   const framework::Scope& scope,
                   bool test_mode) override {
-    VLOG(3) << "convert a set value op to tensorrt";
+    VLOG(3) << "convert a set value op to ascendie";
     framework::OpDesc op_desc(op, nullptr);
 
     auto* inputs = engine_->GetITensor(op_desc.Input("Input")[0]);
@@ -159,7 +159,7 @@ class SetValueConverter : public OpConverter {
   }
 };
 
-}  // namespace tensorrt
+}  // namespace ascendie
 }  // namespace inference
 }  // namespace paddle
 
