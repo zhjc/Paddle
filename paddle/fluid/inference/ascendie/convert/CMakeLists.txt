@@ -13,6 +13,8 @@ list(APPEND
   scale_op.cc
   silu_op.cc
   top_k_op.cc
+  gelu_op.cc
+  logsigmoid_op.cc
   lookup_table.cc)
 
 if(WITH_ASCEND)

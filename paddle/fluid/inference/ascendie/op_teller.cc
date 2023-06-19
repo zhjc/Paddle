@@ -99,6 +99,12 @@ struct SimpleOpTypeSetTeller : public Teller {
     if(op_type == "lookup_table") {
         return true;
     }
+    if(op_type == "gelu") {
+        return true;
+    }
+    if(op_type == "logsigmoid") {
+        return true;
+    }
 
     return false;
   }
