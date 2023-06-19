@@ -99,7 +99,21 @@ struct SimpleOpTypeSetTeller : public Teller {
     if(op_type == "lookup_table") {
         return true;
     }
-
+    if(op_type == "cast") {
+        return true;
+    }
+    if(op_type == "fill_any_like") {
+        return true;
+    }
+    if(op_type == "fill_constant") {
+        return true;
+    }
+    if(op_type == "split") {
+        return true;
+    }
+    if(op_type == "unsqueeze2") {
+        return true;
+    }                     
     return false;
   }
 
