@@ -19,7 +19,9 @@ list(APPEND
   split_op.cc
   gelu_op.cc
   logsigmoid_op.cc
-  unsqueeze2_op.cc)
+  unsqueeze2_op.cc
+  shape_op.cc
+  matrix_multiply_op.cc)
 
 if(WITH_ASCEND)
   cc_library(

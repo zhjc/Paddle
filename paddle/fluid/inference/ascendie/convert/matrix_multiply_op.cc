@@ -109,18 +109,18 @@ class MatrixMultiplyOpConverter : public OpConverter {
     }
 
     if (x_num_col_dims != x_rank - 1) {
-      std::vector<AscendIE::ITensor*> before_shape_tensors;
-      AscendIE::ITensor* input_shape_tensor = Shape(input1);
+      std::vector<AscendIE::Tensor*> before_shape_tensors;
+      AscendIE::Tensor* input_shape_tensor = Shape(input1);
       for (int i = 0; i < x_num_col_dims; ++i) {
         before_shape_tensors.push_back(
             GetEleTensorOfShape(input_shape_tensor, i));
       }
-      AscendIE::ITensor* producted = Add1DConstantLayer(1);
+      AscendIE::Tensor* producted = Add1DConstantLayer(1);
       for (int i = x_num_col_dims; i < x_rank; ++i) {
         producted = Prod(producted, GetEleTensorOfShape(input_shape_tensor, i));
       }
       before_shape_tensors.push_back(producted);
-      AscendIE::ITensor* before_shape_tensor = Concat(before_shape_tensors);
+      AscendIE::Tensor* before_shape_tensor = Concat(before_shape_tensors);
       auto* reshape_before_layer = engine_->network()->AddShuffle(input1);
       reshape_before_layer->SetInput(1, before_shape_tensor);
       reshape_before_layer->SetName(
@@ -154,8 +154,8 @@ class MatrixMultiplyOpConverter : public OpConverter {
 
     if (x_rank != 1 && y_rank != 1 && x_rank != y_rank) {
       if (x_rank < y_rank) {
-        std::vector<AscendIE::ITensor*> before_shape_tensors;
-        AscendIE::ITensor* input_shape_tensor = Shape(input1);
+        std::vector<AscendIE::Tensor*> before_shape_tensors;
+        AscendIE::Tensor* input_shape_tensor = Shape(input1);
         for (int i = 0; i < y_rank - x_rank; ++i) {
           before_shape_tensors.push_back(Add1DConstantLayer(1));
         }
@@ -163,7 +163,7 @@ class MatrixMultiplyOpConverter : public OpConverter {
           before_shape_tensors.push_back(
               GetEleTensorOfShape(input_shape_tensor, i));
         }
-        AscendIE::ITensor* before_shape_tensor = Concat(before_shape_tensors);
+        AscendIE::Tensor* before_shape_tensor = Concat(before_shape_tensors);
         auto* reshape_before_layer = engine_->network()->AddShuffle(input1);
         reshape_before_layer->SetInput(1, before_shape_tensor);
         reshape_before_layer->SetName(
@@ -179,8 +179,8 @@ class MatrixMultiplyOpConverter : public OpConverter {
         }
         x_rank = y_rank;
       } else {
-        std::vector<AscendIE::ITensor*> before_shape_tensors;
-        AscendIE::ITensor* input_shape_tensor = Shape(input2);
+        std::vector<AscendIE::Tensor*> before_shape_tensors;
+        AscendIE::Tensor* input_shape_tensor = Shape(input2);
 
         for (int i = 0; i < x_rank - y_rank; ++i) {
           before_shape_tensors.push_back(Add1DConstantLayer(1));
@@ -189,7 +189,7 @@ class MatrixMultiplyOpConverter : public OpConverter {
           before_shape_tensors.push_back(
               GetEleTensorOfShape(input_shape_tensor, i));
         }
-        AscendIE::ITensor* before_shape_tensor = Concat(before_shape_tensors);
+        AscendIE::Tensor* before_shape_tensor = Concat(before_shape_tensors);
         auto* reshape_before_layer = engine_->network()->AddShuffle(input2);
         reshape_before_layer->SetInput(1, before_shape_tensor);
         reshape_before_layer->SetName(
@@ -239,7 +239,7 @@ class MatrixMultiplyOpConverter : public OpConverter {
     float alpha = PADDLE_GET_CONST(float, op_desc.GetAttr("alpha"));
     if (alpha < 0.999 || alpha > 1.001) {
       auto* alpha_tensor = Add1DConstantLayer(alpha);
-      std::vector<AscendIE::ITensor*> alpha_shape_tensors;
+      std::vector<AscendIE::Tensor*> alpha_shape_tensors;
       for (int i = 0; i < layer->GetOutput(0)->GetDimensions().Size(); i++) {
         alpha_shape_tensors.push_back(Add1DConstantLayer(1));
       }
