@@ -45,6 +45,10 @@ bool is_cuda_pinned_place(const Place &p) {
   return p.GetType() == phi::AllocationType::GPUPINNED;
 }
 
+bool is_npu_place(const Place &p) {
+  return p.GetType() == phi::AllocationType::NPU;
+}
+
 bool is_custom_place(const Place &p) {
   return p.GetType() == phi::AllocationType::CUSTOM;
 }
@@ -86,6 +90,8 @@ std::string PlaceHelper::GetDeviceType(const Place &place) {
     return "xpu";
   } else if (is_custom_place(place)) {
     return place.GetDeviceType();
+  } else if (is_npu_place(place)) {
+    return "npu";
   } else {
     PADDLE_THROW(platform::errors::Fatal(
         "Unknown device type. Please check available devices by "
@@ -104,6 +110,8 @@ Place PlaceHelper::CreatePlace(const std::string &dev_type, size_t dev_id) {
     return platform::CUDAPlace(dev_id);
   } else if (dev_type == "xpu") {
     return platform::XPUPlace(dev_id);
+  } else if (dev_type == "npu") {
+    return platform::NPUPlace(dev_id);
   } else {
     return platform::CustomPlace(dev_type, dev_id);
   }

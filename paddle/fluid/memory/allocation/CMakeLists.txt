@@ -69,6 +69,10 @@ target_link_libraries(allocator ${ALLOCATOR_DEPS})
 add_dependencies(allocator framework_proto)
 set_property(GLOBAL PROPERTY FLUID_MODULES allocator)
 
+if(WITH_ASCEND)
+  target_link_libraries(allocator /usr/local/Ascend/ascendie/lib/libascendie.so)
+endif()
+
 cc_test(
   naive_best_fit_allocator_test
   SRCS naive_best_fit_allocator_test.cc

@@ -4,7 +4,8 @@ list(APPEND
   elementwise_op.cc 
   slice_op.cc 
   concat_op.cc 
-  range_op.cc 
+  range_op.cc
+  layer_norm_op.cc
   softmax_op.cc
   where_op.cc
   transpose_op.cc
@@ -20,12 +21,21 @@ list(APPEND
   gelu_op.cc
   logsigmoid_op.cc
   unsqueeze2_op.cc
+  c_allreduce_op.cc
+  c_concat.cc
   shape_op.cc
   matrix_multiply_op.cc)
+
 
 if(WITH_ASCEND)
   cc_library(
     ascendie_converter
     SRCS ${CONVERT_FILES}
     DEPS ascendinfer_engine ascend_op_teller operator scope framework_proto op_registry)
+if(WITH_TESTING)
+  cc_test(
+    test_concat_op
+    SRCS test_concat_op.cc
+    DEPS ascendinfer_engine ascend_op_teller operator scope framework_proto op_registry)    
+endif()
 endif()

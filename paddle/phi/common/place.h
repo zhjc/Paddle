@@ -32,6 +32,7 @@ enum class AllocationType : int8_t {
   GPUPINNED = 3,
   XPU = 4,
   IPU = 7,
+  NPU = 8,
   CUSTOM = 9,
 };
 
@@ -188,6 +189,16 @@ class CustomPlace : public Place {
   }
 };
 
+class NPUPlace : public Place {
+ public:
+  NPUPlace() : Place(AllocationType::NPU, 0) {}
+  explicit NPUPlace(int device_id) : Place(AllocationType::NPU, device_id) {}
+
+  NPUPlace(const NPUPlace&) = default;
+  NPUPlace(const Place& place)  // NOLINT
+      : Place(AllocationType::NPU, place.GetDeviceId()) {}
+};
+
 std::ostream& operator<<(std::ostream&, const Place&);
 
 Place GetPinnedPlace(const Place& place);
@@ -234,6 +245,7 @@ enum class PlaceType {
   kUNK = static_cast<int>(phi::AllocationType::UNDEFINED),
   kCPU = static_cast<int>(phi::AllocationType::CPU),
   kGPU = static_cast<int>(phi::AllocationType::GPU),
+  kNPU = static_cast<int>(phi::AllocationType::NPU),
 };
 
 PADDLE_API bool operator==(const Place& place, PlaceType place_type);
