@@ -29,6 +29,11 @@
 #if defined(PADDLE_WITH_CUDA) || defined(PADDLE_WITH_HIP)
 #include "paddle/fluid/platform/cuda_device_guard.h"
 #endif
+
+#ifdef PADDLE_WITH_ASCEND
+#include <AscendIE.h>
+#endif
+
 #include "paddle/fluid/platform/flags.h"
 PADDLE_DEFINE_EXPORTED_bool(
     init_allocated_mem,
@@ -209,6 +214,63 @@ size_t Used<platform::XPUPlace>(const platform::XPUPlace &place) {
 #else
   PADDLE_THROW(
       platform::errors::PermissionDenied("'XPUPlace' is not supported."));
+#endif
+}
+
+template <>
+void *Alloc<platform::NPUPlace>(const platform::NPUPlace &place, size_t size) {
+#ifdef PADDLE_WITH_ASCEND
+  VLOG(10) << "Allocate " << size << " bytes on " << platform::Place(place);
+  void *p = nullptr;
+  AscendIE::AIEBuffer buffer(p, size);
+  int ret = (int)AscendIE::Malloc(buffer, AscendIE::AIEMemMallocPolicy::HUGE_FIRST);
+  PADDLE_ENFORCE_EQ(
+      ret,
+      0, // SUCCESS
+      platform::errors::External(
+          "NPU API return wrong value[%d], no enough memory", ret));
+  VLOG(10) << "  pointer=" << p;
+  return p;
+#else
+  PADDLE_THROW(
+      platform::errors::PermissionDenied("'NPUPlace' is not supported."));
+  return nullptr;
+#endif
+}
+
+template <>
+void Free<platform::NPUPlace>(const platform::NPUPlace &place,
+                              void *p,
+                              size_t size) {
+#ifdef PADDLE_WITH_ASCEND
+  VLOG(10) << "Free " << size << " bytes on " << platform::Place(place);
+  VLOG(10) << "Free pointer=" << p << " on " << platform::Place(place);
+  AscendIE::Free(*reinterpret_cast<AscendIE::AIEBuffer *>(p));
+#else
+  PADDLE_THROW(
+      platform::errors::PermissionDenied("'NPUPlace' is not supported."));
+#endif
+}
+
+template <>
+uint64_t Release<platform::NPUPlace>(const platform::NPUPlace &place) {
+#ifdef PADDLE_WITH_ASCEND
+  LOG(WARNING) << "Release NPU pool is not supported now, no action here.";
+#else
+  PADDLE_THROW(
+      platform::errors::PermissionDenied("'NPUPlace' is not supported."));
+#endif
+  return -1;
+}
+
+template <>
+size_t Used<platform::NPUPlace>(const platform::NPUPlace &place) {
+#ifdef PADDLE_WITH_ASCEND
+  printf("Used func return 0 for NPUPlace\n");
+  return 0;
+#else
+  PADDLE_THROW(
+      platform::errors::PermissionDenied("'NPUPlace' is not supported."));
 #endif
 }
 

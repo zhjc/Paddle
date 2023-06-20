@@ -449,6 +449,16 @@ void TensorCopySync(const phi::DenseTensor& src,
         "Copy from %s to %s is not supported.", src_place, dst_place));
   }
 #endif
+#ifdef PADDLE_WITH_ASCEND
+  else if (platform::is_cpu_place(src_place) &&  // NOLINT
+           platform::is_npu_place(dst_place)) {
+    memory::Copy(dst_place, dst_ptr, src_place, src_ptr, size);
+  }
+  else if (platform::is_npu_place(src_place) &&  // NOLINT
+           platform::is_cpu_place(dst_place)) {
+    memory::Copy(dst_place, dst_ptr, src_place, src_ptr, size);
+  }
+#endif
 }
 
 void TensorToStream(std::ostream& os,

@@ -63,6 +63,9 @@ if(NOT APPLE AND NOT WIN32)
     python
     ARGS
     --inference_model_dir=${WORD2VEC_MODEL_DIR})
+    if(WITH_ASCEND)
+      target_link_libraries(test_analyzer /usr/local/Ascend/ascendie/lib/libascendie.so)
+    endif()
 elseif(WIN32)
   inference_analysis_test(
     test_analyzer

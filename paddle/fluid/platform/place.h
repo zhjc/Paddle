@@ -30,6 +30,7 @@ using CUDAPlace = phi::GPUPlace;
 using CUDAPinnedPlace = phi::GPUPinnedPlace;
 using XPUPlace = phi::XPUPlace;
 using IPUPlace = phi::IPUPlace;
+using NPUPlace = phi::NPUPlace;
 using CustomPlace = phi::CustomPlace;
 
 using PlaceList = std::vector<Place>;
@@ -48,6 +49,7 @@ bool is_xpu_place(const Place &);
 bool is_ipu_place(const Place &);
 bool is_cpu_place(const Place &);
 bool is_cuda_pinned_place(const Place &);
+bool is_npu_place(const Place &);
 bool is_custom_place(const Place &p);
 bool places_are_same_class(const Place &, const Place &);
 bool is_same_place(const Place &, const Place &);
@@ -93,6 +95,16 @@ typename Visitor::result_type VisitPlace(const Place &place,
 #else
       PADDLE_THROW(platform::errors::Unavailable(
           "Paddle is not compiled with IPU. Cannot visit ipu device"));
+      return typename Visitor::result_type();
+#endif
+    }
+    case phi::AllocationType::NPU: {
+#ifdef PADDLE_WITH_ASCEND
+      platform::NPUPlace p(place.GetDeviceId());
+      return visitor(p);
+#else
+      PADDLE_THROW(platform::errors::Unavailable(
+          "Paddle is not compiled with NPU. Cannot visit ipu device"));
       return typename Visitor::result_type();
 #endif
     }

@@ -103,7 +103,7 @@ void TensorToVector(const phi::DenseTensor& src,
                     const platform::DeviceContext& ctx,
                     std::vector<T>* dst);
 template <typename T>
-void TesnorToVector(const phi::DenseTensor& src, std::vector<T>* dst);
+void TensorToVector(const phi::DenseTensor& src, std::vector<T>* dst);
 
 // convert dlpack's DLTensor to tensor
 
@@ -324,6 +324,11 @@ void TensorToVector(const phi::DenseTensor& src,
     memory::Copy(dst_place, dst_ptr, src.place(), src_ptr, size, nullptr);
   }
 #endif
+#ifdef PADDLE_WITH_ASCEND
+  else if (platform::is_npu_place(src.place())) {  // NOLINT
+    memory::Copy(dst_place, dst_ptr, src.place(), src_ptr, size, nullptr);
+  }
+#endif
   else {  // NOLINT
     PADDLE_THROW(platform::errors::Unimplemented(
         "TensorToVector on %s is not supported.", src.place()));
@@ -359,6 +364,11 @@ inline void TensorToVector(const phi::DenseTensor& src,
 #if defined(PADDLE_WITH_XPU)
   else if (platform::is_xpu_place(src.place())) {  // NOLINT
     memory::Copy(dst_place, dst_ptr, src.place(), src_ptr, size);
+  }
+#endif
+#ifdef PADDLE_WITH_ASCEND
+  else if (platform::is_npu_place(src.place())) {  // NOLINT
+    memory::Copy(dst_place, dst_ptr, src.place(), src_ptr, size, nullptr);
   }
 #endif
 #ifdef PADDLE_WITH_CUSTOM_DEVICE

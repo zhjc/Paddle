@@ -23,6 +23,10 @@ limitations under the License. */
 #include "paddle/fluid/platform/device/xpu/xpu_header.h"
 #endif
 
+#ifdef PADDLE_WITH_ASCEND
+#include <AscendIE.h>
+#endif
+
 namespace paddle {
 namespace memory {
 
@@ -890,6 +894,67 @@ void Copy<phi::Place, phi::CPUPlace>(phi::Place dst_place,
                                      void* stream) {
   Copy(dst_place, dst, phi::Place(src_place.GetType()), src, num, stream);
 }
+#endif
+
+#ifdef PADDLE_WITH_ASCEND
+template <>
+void Copy<platform::CPUPlace, platform::NPUPlace>(platform::CPUPlace dst_place,
+                                                  void* dst,
+                                                  platform::NPUPlace src_place,
+                                                  const void* src,
+                                                  size_t num,
+                                                  void* stream) {
+  if (UNLIKELY(num == 0)) return;
+
+  VLOG(4) << "memory::Copy " << num << " Bytes from " << src_place << " to "
+          << dst_place << " by stream(" << stream << ")";
+  if (stream) {
+    platform::RecordEvent record_event(
+        "GpuMemcpyAsync:NPU->CPU", platform::TracerEventType::UserDefined, 1);
+    AscendIE::MemcpyAsync(
+        *reinterpret_cast<AscendIE::AIEBuffer*>(dst),
+        *reinterpret_cast<AscendIE::AIEBuffer*>(const_cast<void*>(src)),
+        AscendIE::AIEMemcpyKind::DEVICE_TO_HOST,
+        stream);
+  } else {
+    platform::RecordEvent record_event(
+        "GpuMemcpySync:NPU->CPU", platform::TracerEventType::UserDefined, 1);
+    AscendIE::Memcpy(
+        *reinterpret_cast<AscendIE::AIEBuffer *>(dst),
+        *reinterpret_cast<AscendIE::AIEBuffer *>(const_cast<void *>(src)),
+        AscendIE::AIEMemcpyKind::DEVICE_TO_HOST);
+  }
+}
+
+template <>
+void Copy<platform::NPUPlace, platform::CPUPlace>(platform::NPUPlace dst_place,
+                                                  void* dst,
+                                                  platform::CPUPlace src_place,
+                                                  const void* src,
+                                                  size_t num,
+                                                  void* stream) {
+  if (UNLIKELY(num == 0)) return;
+
+  VLOG(4) << "memory::Copy " << num << " Bytes from " << src_place << " to "
+          << dst_place << " by stream(" << stream << ")";
+  if (stream) {
+    platform::RecordEvent record_event(
+        "GpuMemcpyAsync:CPU->NPU", platform::TracerEventType::UserDefined, 1);
+    AscendIE::MemcpyAsync(
+        *reinterpret_cast<AscendIE::AIEBuffer*>(dst),
+        *reinterpret_cast<AscendIE::AIEBuffer*>(const_cast<void*>(src)),
+        AscendIE::AIEMemcpyKind::HOST_TO_DEVICE,
+        stream);
+  } else {
+    platform::RecordEvent record_event(
+        "GpuMemcpySync:CPU->NPU", platform::TracerEventType::UserDefined, 1);
+    AscendIE::Memcpy(
+        *reinterpret_cast<AscendIE::AIEBuffer*>(dst),
+        *reinterpret_cast<AscendIE::AIEBuffer*>(const_cast<void*>(src)),
+        AscendIE::AIEMemcpyKind::HOST_TO_DEVICE);
+  }
+}
+
 #endif
 
 }  // namespace memory

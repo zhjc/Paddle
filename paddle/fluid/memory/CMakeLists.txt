@@ -51,6 +51,10 @@ if(WITH_GPU)
   endif()
 endif()
 
+if(WITH_ASCEND)
+  target_link_libraries(memcpy /usr/local/Ascend/ascendie/lib/libascendie.so)
+endif()
+
 if(WITH_ROCM)
   hip_test(
     malloc_test
