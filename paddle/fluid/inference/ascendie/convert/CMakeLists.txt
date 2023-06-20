@@ -22,7 +22,10 @@ list(APPEND
   logsigmoid_op.cc
   unsqueeze2_op.cc
   c_allreduce_op.cc
-  c_concat.cc)
+  c_concat.cc
+  shape_op.cc
+  matrix_multiply_op.cc)
+
 
 if(WITH_ASCEND)
   cc_library(
