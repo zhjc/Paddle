@@ -227,7 +227,7 @@ class MatrixMultiplyOpConverter : public OpConverter {
     }
 
     AscendIE::BaseLayer* layer = nullptr;
-    AscendIE::MatrixMultiplyLayer *layer =
+    layer =
         engine_->network()->AddMatrixMultiply(input1, matrix_operation_x, input2, matrix_operation_y);
 
     if (enable_int8) {
