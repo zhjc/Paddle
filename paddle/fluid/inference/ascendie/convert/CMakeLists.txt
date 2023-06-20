@@ -24,4 +24,10 @@ if(WITH_ASCEND)
     ascendie_converter
     SRCS ${CONVERT_FILES}
     DEPS ascendinfer_engine ascend_op_teller operator scope framework_proto op_registry)
+if(WITH_TESTING)
+  cc_test(
+    test_concat_op
+    SRCS test_concat_op.cc
+    DEPS ascendinfer_engine ascend_op_teller operator scope framework_proto op_registry)    
+endif()
 endif()

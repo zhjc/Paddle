@@ -41,8 +41,6 @@ limitations under the License. */
 #include "paddle/phi/core/stream.h"
 #include "paddle/utils/any.h"
 
-PHI_DECLARE_bool(aie_ibuilder_cache);
-
 namespace paddle {
 namespace inference {
 namespace ascendie {
@@ -704,9 +702,7 @@ class AscendIEEngineManager {
     // createInferBuilder loads aie kernels and take a few second
     // But as long as one IBuilder lives, aie kernel will not be unloaded
     // Hence, a persistent IBuilder to avoid ascend unload/reload kernels
-    if (FLAGS_aie_ibuilder_cache) {
-      holder_.reset(AscendIE::Builder::CreateInferBuilder("Ascend910A"));
-    }
+    holder_.reset(AscendIE::Builder::CreateInferBuilder("Ascend910A"));
   }
 
   bool Empty() const {
