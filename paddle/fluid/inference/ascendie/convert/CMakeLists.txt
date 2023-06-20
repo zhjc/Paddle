@@ -4,7 +4,8 @@ list(APPEND
   elementwise_op.cc 
   slice_op.cc 
   concat_op.cc 
-  range_op.cc 
+  range_op.cc
+  layer_norm_op.cc
   softmax_op.cc
   where_op.cc
   transpose_op.cc
@@ -19,7 +20,9 @@ list(APPEND
   split_op.cc
   gelu_op.cc
   logsigmoid_op.cc
-  unsqueeze2_op.cc)
+  unsqueeze2_op.cc
+  c_allreduce_op.cc
+  c_concat.cc)
 
 if(WITH_ASCEND)
   cc_library(
