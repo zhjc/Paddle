@@ -228,7 +228,7 @@ class MatrixMultiplyOpConverter : public OpConverter {
 
     AscendIE::BaseLayer* layer = nullptr;
     MatrixMultiplyLayer *layer =
-        network->AddMatrixMultiply(input1, matrix_operation_x, input2, matrix_operation_y);
+        engine_->network()->AddMatrixMultiply(input1, matrix_operation_x, input2, matrix_operation_y);
 
     if (enable_int8) {
       if (op_desc.HasAttr("out_threshold") || op_desc.HasAttr("Out")) {
@@ -245,7 +245,7 @@ class MatrixMultiplyOpConverter : public OpConverter {
       }
       auto* reshape_alpha = engine_->network()->AddShuffle(alpha_tensor);
       reshape_alpha->SetInput(1, Concat(alpha_shape_tensors));
-      layer = network->AddElementWise(layer->GetOutput(0), reshape_alpha->GetOutput(0), AscendIE::ElementWiseOperation::MUL);
+      layer = engine_->network()->AddElementWise(layer->GetOutput(0), reshape_alpha->GetOutput(0), AscendIE::ElementWiseOperation::MUL);
     }
     RreplenishLayerAndOutput(
         layer, "matrix_multiply_op", {output_name}, test_mode);
