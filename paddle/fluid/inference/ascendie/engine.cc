@@ -427,7 +427,7 @@ AscendIEEngine::Weight AscendIEEngine::GetTrtWeight(
 int AscendIEEngine::GetRuntimeBatch() { return runtime_batch_; }
 
 void AscendIEEngine::freshDeviceId() {
-  // platform::SetDeviceId(device_id_);
+  AscendIE::SetDevice(device_id_);
 }
 
 }  // namespace ascendie

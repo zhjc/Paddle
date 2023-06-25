@@ -286,6 +286,20 @@ class AscendIEEngine {
     cur_profile_num_ = 0;
   }
 
+  AscendIE::ModelData Serialize() {
+    PADDLE_ENFORCE_NOT_NULL(
+        infer_builder_,
+        platform::errors::InvalidArgument(
+            "The AscendIE engine must be built first before serialization"));
+    
+    PADDLE_ENFORCE_NOT_NULL(
+        infer_network_,
+        platform::errors::InvalidArgument(
+            "The AscendIE network must be built first before serialization"));
+    AscendIE::BuilderConfig config;
+    
+    return infer_builder_->BuildModel(infer_network_.get(), config);
+  }
   void Deserialize(const std::string& engine_serialized_data);
 
   void SetRuntimeBatch(size_t batch_size);

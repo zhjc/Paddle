@@ -730,19 +730,19 @@ std::string AscendIESubgraphPass::CreateAscendIEOp(
           output_mapping,
           aie_engine);
 
-  // if (use_static_engine) {
-  //   nvinfer1::IHostMemory *serialized_engine_data = aie_engine->Serialize();
-  //   aie_engine_serialized_data =
-  //       std::string((const char *)serialized_engine_data->data(),
-  //                   serialized_engine_data->size());
-  //   SaveAieEngineSerializedDataToFile(
-  //       GetAieEngineSerializedPath(Get<std::string>("model_opt_cache_dir"),
-  //                                  engine_key),
-  //       aie_engine_serialized_data);
-  //   LOG(INFO) << "Save AIE Optimized Info to "
-  //             << GetAieEngineSerializedPath(
-  //                    Get<std::string>("model_opt_cache_dir"), engine_key);
-  // }
+  if (use_static_engine) {
+    auto serialized_engine_data = aie_engine->Serialize();
+    aie_engine_serialized_data =
+        std::string((const char *)serialized_engine_data->data,
+                    serialized_engine_data->size());
+    SaveAieEngineSerializedDataToFile(
+        GetAieEngineSerializedPath(Get<std::string>("model_opt_cache_dir"),
+                                   engine_key),
+        aie_engine_serialized_data);
+    LOG(INFO) << "Save AIE Optimized Info to "
+              << GetAieEngineSerializedPath(
+                     Get<std::string>("model_opt_cache_dir"), engine_key);
+  }
 
   return engine_key + std::to_string(predictor_id);
 }
